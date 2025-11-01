@@ -27,8 +27,13 @@ from langgraph.graph import StateGraph, START, END
 from dotenv import load_dotenv
 
 from .parser import parse_resume
+from .logger import log_node_execution, log_llm_call, set_log_level
 
 load_dotenv()
+
+# 从环境变量获取日志级别，如果没有设置则默认为INFO
+log_level = os.getenv("LOG_LEVEL", "INFO")
+set_log_level(log_level)
 
 class DifficultyLevel(Enum):
     EASY = "easy"
@@ -83,6 +88,9 @@ class InterviewState(TypedDict):
 # Node functions for the graph
 def upload_resume_node(state: InterviewState) -> Dict[str, Any]:
     """Node for uploading and parsing resume"""
+    # 记录节点执行开始
+    log_node_execution("upload_resume_node", state, {})
+    
     # Get file path from state
     file_path = state.get("messages", [{}])[0].get("file_path") if state.get("messages") else None
     
@@ -102,13 +110,20 @@ def upload_resume_node(state: InterviewState) -> Dict[str, Any]:
         # If parsing fails, raise an error with details
         raise ValueError(f"Failed to parse resume file '{file_path}': {str(e)}")
     
-    return {
+    result = {
         "resume_content": resume_content,
         "interview_stage": "resume_analysis"
     }
+    
+    # 记录节点执行结束
+    log_node_execution("upload_resume_node", state, result)
+    return result
 
 def analyze_resume_node(state: InterviewState) -> Dict[str, Any]:
     """Node for analyzing resume and extracting projects and technical points"""
+    # 记录节点执行开始
+    log_node_execution("analyze_resume_node", state, {})
+    
     model = init_chat_model("deepseek-chat", temperature=0)
     
     prompt = f"""
@@ -152,6 +167,9 @@ def analyze_resume_node(state: InterviewState) -> Dict[str, Any]:
             HumanMessage(content=prompt)
         ])
         
+        # 记录LLM调用
+        log_llm_call("deepseek-chat", prompt, response.content)
+        
         # Parse the JSON response
         parser = JsonOutputParser()
         result = parser.parse(response.content)
@@ -159,16 +177,23 @@ def analyze_resume_node(state: InterviewState) -> Dict[str, Any]:
         projects = result.get("projects", [])
         technical_points = result.get("technical_points", [])
         
-        return {
+        output = {
             "projects": projects,
             "technical_points": technical_points,
             "interview_stage": "questioning"
         }
+        
+        # 记录节点执行结束
+        log_node_execution("analyze_resume_node", state, output)
+        return output
     except Exception as e:
         raise ValueError(f"Failed to analyze resume: {str(e)}")
 
 def generate_questions_node(state: InterviewState) -> Dict[str, Any]:
     """Node for generating interview questions"""
+    # 记录节点执行开始
+    log_node_execution("generate_questions_node", state, {})
+    
     model = init_chat_model("deepseek-chat", temperature=0.7)
     
     # Combine projects and technical points for question generation
@@ -237,6 +262,9 @@ def generate_questions_node(state: InterviewState) -> Dict[str, Any]:
                 HumanMessage(content=prompt)
             ])
             
+            # 记录LLM调用
+            log_llm_call("deepseek-chat", prompt, response.content)
+            
             parser = JsonOutputParser()
             questions = parser.parse(response.content)
             all_questions.append(questions)
@@ -246,21 +274,30 @@ def generate_questions_node(state: InterviewState) -> Dict[str, Any]:
             print(f"Warning: Failed to generate questions for topic {topic}: {str(e)}")
             continue
     
-    return {
+    output = {
         "interview_questions": all_questions,
         "current_question_index": 0,
         "current_follow_up_index": -1,  # -1 means we're on the main question
         "interview_stage": "questioning"
     }
+    
+    # 记录节点执行结束
+    log_node_execution("generate_questions_node", state, output)
+    return output
 
 def ask_question_node(state: InterviewState) -> Dict[str, Any]:
     """Node for presenting questions to the candidate and collecting answers"""
+    # 记录节点执行开始
+    log_node_execution("ask_question_node", state, {})
+    
     questions = state.get("interview_questions", [])
     current_index = state.get("current_question_index", 0)
     follow_up_index = state.get("current_follow_up_index", -1)
     
     if not questions or current_index >= len(questions):
-        return {"interview_stage": "coding"}
+        output = {"interview_stage": "coding"}
+        log_node_execution("ask_question_node", state, output)
+        return output
     
     current_q_set = questions[current_index]
     
@@ -278,11 +315,13 @@ def ask_question_node(state: InterviewState) -> Dict[str, Any]:
     
     if not question_text:
         # Move to next question set if current one doesn't have valid questions
-        return {
+        output = {
             "current_question_index": current_index + 1,
             "current_follow_up_index": -1,
             "interview_stage": "questioning"
         }
+        log_node_execution("ask_question_node", state, output)
+        return output
     
     # Display the question to the candidate
     print(f"\nQuestion: {question_text}")
@@ -303,19 +342,139 @@ def ask_question_node(state: InterviewState) -> Dict[str, Any]:
     current_q_set_copy["answers"].append(answer)
     updated_questions[current_index] = current_q_set_copy
     
-    return {
+    output = {
         "interview_questions": updated_questions,
         "interview_stage": "questioning"
     }
+    
+    # 记录节点执行结束
+    log_node_execution("ask_question_node", state, output)
+    return output
 
-def next_question_node(state: InterviewState) -> Dict[str, Any]:
-    """Node for determining the next question to ask"""
+def generate_adaptive_questions_node(state: InterviewState) -> Dict[str, Any]:
+    """Node for generating adaptive follow-up questions based on candidate's answers"""
+    # 记录节点执行开始
+    log_node_execution("generate_adaptive_questions_node", state, {})
+    
+    model = init_chat_model("deepseek-chat", temperature=0.7)
+    
     questions = state.get("interview_questions", [])
     current_index = state.get("current_question_index", 0)
     follow_up_index = state.get("current_follow_up_index", -1)
     
     if not questions or current_index >= len(questions):
-        return {"interview_stage": "coding"}
+        output = {}
+        log_node_execution("generate_adaptive_questions_node", state, output)
+        return output
+    
+    current_q_set = questions[current_index]
+    answers = current_q_set.get("answers", [])
+    
+    # Only generate adaptive questions after the candidate has provided an answer
+    if not answers:
+        output = {}
+        log_node_execution("generate_adaptive_questions_node", state, output)
+        return output
+    
+    # Get the latest answer
+    latest_answer = answers[-1]
+    topic = current_q_set.get("topic", "")
+    
+    # Determine the type of question (main or follow-up)
+    if follow_up_index == -1:
+        question_type = "main"
+        original_question = current_q_set.get("question", "")
+    else:
+        # For follow-up questions, we need to get the correct follow-up question
+        follow_ups = current_q_set.get("follow_up_questions", [])
+        if follow_up_index < len(follow_ups):
+            original_question = follow_ups[follow_up_index]
+        else:
+            original_question = ""
+        question_type = "follow-up"
+    
+    prompt = f"""
+    Based on the candidate's answer to a {question_type} question, generate a deeper follow-up question.
+    
+    Topic: {topic}
+    Original Question: {original_question}
+    Candidate's Answer: {latest_answer}
+    
+    Generate a follow-up question that either:
+    1. Delves deeper into a specific aspect of their answer
+    2. Expands on related knowledge
+    3. Challenges their approach or solution
+    
+    Format your response as JSON with this structure:
+    {{
+      "adaptive_question": "A deeper or expanded question based on the candidate's answer"
+    }}
+    """
+    
+    try:
+        response = model.invoke([
+            SystemMessage(content="You are an expert technical interviewer skilled at asking deep follow-up questions."),
+            HumanMessage(content=prompt)
+        ])
+        
+        # 记录LLM调用
+        log_llm_call("deepseek-chat", prompt, response.content)
+        
+        parser = JsonOutputParser()
+        result = parser.parse(response.content)
+        adaptive_question = result.get("adaptive_question", "")
+        
+        # Display the adaptive question to the candidate
+        if adaptive_question:
+            print(f"\nFollow-up: {adaptive_question}")
+            print("-" * 50)
+            
+            # Get answer to the adaptive question
+            adaptive_answer = input("Your answer: ").strip()
+            
+            # Update the interview questions with the adaptive question and answer
+            updated_questions = list(questions)
+            current_q_set_copy = dict(updated_questions[current_index])
+            
+            # Add adaptive question and answer to the set
+            if "adaptive_questions" not in current_q_set_copy:
+                current_q_set_copy["adaptive_questions"] = []
+            
+            current_q_set_copy["adaptive_questions"].append({
+                "question": adaptive_question,
+                "answer": adaptive_answer
+            })
+            
+            updated_questions[current_index] = current_q_set_copy
+            
+            output = {
+                "interview_questions": updated_questions
+            }
+            
+            # 记录节点执行结束
+            log_node_execution("generate_adaptive_questions_node", state, output)
+            return output
+    except Exception as e:
+        # If we can't generate an adaptive question, continue with regular flow
+        print(f"Warning: Could not generate adaptive question: {str(e)}")
+    
+    output = {}
+    log_node_execution("generate_adaptive_questions_node", state, output)
+    return output
+
+def next_question_node(state: InterviewState) -> Dict[str, Any]:
+    """Node for determining the next question to ask"""
+    # 记录节点执行开始
+    log_node_execution("next_question_node", state, {})
+    
+    questions = state.get("interview_questions", [])
+    current_index = state.get("current_question_index", 0)
+    follow_up_index = state.get("current_follow_up_index", -1)
+    
+    if not questions or current_index >= len(questions):
+        output = {"interview_stage": "coding"}
+        log_node_execution("next_question_node", state, output)
+        return output
     
     current_q_set = questions[current_index]
     follow_ups = current_q_set.get("follow_up_questions", [])
@@ -323,24 +482,33 @@ def next_question_node(state: InterviewState) -> Dict[str, Any]:
     # If we're on the main question (-1) or haven't finished follow-ups, continue with follow-ups
     if follow_up_index < len(follow_ups) - 1:
         # Move to next follow-up question
-        return {
+        output = {
             "current_follow_up_index": follow_up_index + 1,
             "interview_stage": "questioning"
         }
+        log_node_execution("next_question_node", state, output)
+        return output
     # If we've finished follow-ups and there are more question sets, go to next set
     elif current_index < len(questions) - 1:
         # Move to next main question
-        return {
+        output = {
             "current_question_index": current_index + 1,
             "current_follow_up_index": -1,  # Reset to main question
             "interview_stage": "questioning"
         }
+        log_node_execution("next_question_node", state, output)
+        return output
     # Otherwise, move to coding challenge
     else:
-        return {"interview_stage": "coding"}
+        output = {"interview_stage": "coding"}
+        log_node_execution("next_question_node", state, output)
+        return output
 
 def generate_coding_challenge_node(state: InterviewState) -> Dict[str, Any]:
     """Node for generating a coding challenge"""
+    # 记录节点执行开始
+    log_node_execution("generate_coding_challenge_node", state, {})
+    
     model = init_chat_model("deepseek-chat", temperature=0.5)
     
     prompt = """
@@ -362,6 +530,9 @@ def generate_coding_challenge_node(state: InterviewState) -> Dict[str, Any]:
             HumanMessage(content=prompt)
         ])
         
+        # 记录LLM调用
+        log_llm_call("deepseek-chat", prompt, response.content)
+        
         parser = JsonOutputParser()
         challenge = parser.parse(response.content)
         
@@ -372,16 +543,23 @@ def generate_coding_challenge_node(state: InterviewState) -> Dict[str, Any]:
         print("-" * 50)
         solution = input("Write your solution:\n").strip()
         
-        return {
+        output = {
             "coding_challenge": challenge,
             "coding_solution": solution,
             "interview_stage": "evaluation"
         }
+        
+        # 记录节点执行结束
+        log_node_execution("generate_coding_challenge_node", state, output)
+        return output
     except Exception as e:
         raise ValueError(f"Failed to generate coding challenge: {str(e)}")
 
 def evaluate_responses_node(state: InterviewState) -> Dict[str, Any]:
     """Node for evaluating candidate responses"""
+    # 记录节点执行开始
+    log_node_execution("evaluate_responses_node", state, {})
+    
     model = init_chat_model("deepseek-chat", temperature=0)
     
     # Prepare the data for evaluation
@@ -417,15 +595,22 @@ def evaluate_responses_node(state: InterviewState) -> Dict[str, Any]:
             HumanMessage(content=prompt)
         ])
         
+        # 记录LLM调用
+        log_llm_call("deepseek-chat", prompt, response.content)
+        
         parser = JsonOutputParser()
         evaluation = parser.parse(response.content)
         
-        return {
+        output = {
             "evaluation": evaluation,
             "final_score": evaluation.get("score"),
             "final_feedback": evaluation.get("feedback"),
             "interview_stage": "completed"
         }
+        
+        # 记录节点执行结束
+        log_node_execution("evaluate_responses_node", state, output)
+        return output
     except Exception as e:
         raise ValueError(f"Failed to evaluate responses: {str(e)}")
 
@@ -446,14 +631,25 @@ def route_question(state: InterviewState) -> str:
             return "completed"
         return "coding"
     
+    # If we have no questions, go to coding
     if not questions:
         return "coding"
     
+    # If we've gone through all questions, go to coding
     if current_index >= len(questions):
         return "coding"
     
     current_question_set = questions[current_index]
     follow_ups = current_question_set.get("follow_up_questions", [])
+    
+    # Check if we need to ask an adaptive question
+    answers = current_question_set.get("answers", [])
+    adaptive_questions = current_question_set.get("adaptive_questions", [])
+    
+    # If we have answers but haven't asked adaptive questions yet
+    # Only ask adaptive questions if we have fewer adaptive questions than regular answers
+    if answers and len(adaptive_questions) < len(answers):
+        return "adaptive_questioning"
     
     # If we're on the main question (-1) or haven't finished follow-ups, continue questioning
     if follow_up_index < len(follow_ups) - 1:
@@ -476,6 +672,7 @@ def create_interview_graph() -> StateGraph:
     workflow.add_node("analyze_resume", analyze_resume_node)
     workflow.add_node("generate_questions", generate_questions_node)
     workflow.add_node("ask_question", ask_question_node)
+    workflow.add_node("generate_adaptive_questions", generate_adaptive_questions_node)
     workflow.add_node("next_question", next_question_node)
     workflow.add_node("generate_coding_challenge", generate_coding_challenge_node)
     workflow.add_node("evaluate_responses", evaluate_responses_node)
@@ -492,11 +689,13 @@ def create_interview_graph() -> StateGraph:
         {
             "continue_questioning": "ask_question",
             "next_question_set": "ask_question",
+            "adaptive_questioning": "generate_adaptive_questions",
             "coding": "generate_coding_challenge"
         }
     )
     
     workflow.add_edge("ask_question", "next_question")
+    workflow.add_edge("generate_adaptive_questions", "next_question")
     
     workflow.add_conditional_edges(
         "next_question",
@@ -504,6 +703,7 @@ def create_interview_graph() -> StateGraph:
         {
             "continue_questioning": "ask_question",
             "next_question_set": "ask_question",
+            "adaptive_questioning": "generate_adaptive_questions",
             "coding": "generate_coding_challenge"
         }
     )
@@ -517,7 +717,8 @@ def run_interview(file_path: str) -> Dict[str, Any]:
     """Run the full interview process"""
     # Create the graph
     graph = create_interview_graph()
-    app = graph.compile()
+    # Increase recursion limit to prevent the RecursionError
+    app = graph.compile(checkpointer=None, interrupt_before=None, interrupt_after=None)
     
     # Initial state
     initial_state = {
@@ -536,7 +737,7 @@ def run_interview(file_path: str) -> Dict[str, Any]:
         "interview_stage": "resume_upload"
     }
     
-    # Run the interview
-    final_state = app.invoke(initial_state)
+    # Run the interview with increased recursion limit
+    final_state = app.invoke(initial_state, config={"recursion_limit": 100})
     
     return final_state

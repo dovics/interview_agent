@@ -1,57 +1,104 @@
 # Interview Agent
 
-An AI-powered interview agent that automates the technical interview process.
+An AI-powered technical interview agent that conducts interviews based on candidate resumes.
 
 ## Features
 
-1. **Resume Parsing**: Supports PDF, DOCX, and Markdown formats
-2. **Resume Analysis**: Extracts key projects and technical skills
-3. **Intelligent Questioning**: Generates targeted questions and follow-ups
-4. **Coding Challenges**: Provides algorithmic problems (LeetCode-style)
-5. **Automated Scoring**: Evaluates candidates and provides scores/feedback
-
-## Workflow
-
-1. Candidate uploads resume (PDF, DOCX, or Markdown)
-2. System parses resume and analyzes content with LLM
-3. Agent identifies 1-2 key projects and 3-4 technical areas
-4. For each topic, agent asks 2-3 rounds of questions (main question + follow-ups)
-5. Agent assigns medium/hard difficulty coding challenge
-6. Candidate submits solution for automated review
-7. System scores candidate (0-100 scale, 60+ to pass)
+- Accepts resumes in PDF, DOCX, or Markdown format
+- Parses and analyzes resumes using LLM
+- Generates technical interview questions based on resume content
+- Conducts multi-round questioning with follow-up questions
+- Provides adaptive questioning based on candidate responses
+- Offers coding challenges
+- Evaluates candidates and provides scoring and feedback
 
 ## Installation
 
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd interview-agent
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -e .
+   ```
+   
+   Or if you're using Poetry:
+   ```bash
+   poetry install
+   ```
+
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Then edit `.env` to add your DeepSeek API key.
+
+## Usage
+
+### Command Line
+
 ```bash
-pip install -e .
+python main.py path/to/resume.pdf
 ```
 
-## Dependencies
+Options:
+- `--output`, `-o`: Save results to a JSON file
+- `--log-level`, `-l`: Set logging level (DEBUG, INFO, WARNING, ERROR). Default is INFO.
 
-- Python 3.9+
-- LangChain for LLM interactions
-- DeepSeek as the primary LLM
-- PyPDF2 for PDF parsing
-- python-docx for DOCX parsing
-- LangGraph for workflow orchestration
+Examples:
+```bash
+# Run with default settings
+python main.py examples/resume.md
+
+# Run with output file
+python main.py resume.pdf --output interview_results.json
+
+# Run with debug logging
+python main.py resume.pdf --log-level DEBUG
+```
+
+### As a Module
+
+```python
+from interview_agent import run_interview
+
+result = run_interview("path/to/resume.pdf")
+print(f"Score: {result['final_score']}/100")
+print(f"Feedback: {result['final_feedback']}")
+```
+
+## Logging
+
+The system provides hierarchical logging capabilities:
+
+- **DEBUG level**: Outputs detailed information about all tool calls and LLM calls, including inputs and outputs
+- **INFO level**: Outputs basic information about executed nodes in the workflow
+
+You can set the log level in three ways:
+1. Using the command line option: `--log-level DEBUG`
+2. Setting the LOG_LEVEL environment variable in `.env`
+3. If neither is specified, defaults to INFO level
+
+## How It Works
+
+1. **Resume Upload**: Accepts and parses resume files
+2. **Resume Analysis**: Uses LLM to extract projects and technical skills
+3. **Question Generation**: Creates targeted interview questions
+4. **Interactive Interview**: Conducts multi-round questioning
+5. **Adaptive Questioning**: Generates follow-up questions based on responses
+6. **Coding Challenge**: Provides a coding task
+7. **Evaluation**: Scores the candidate based on all responses
 
 ## Testing
 
 The project includes unit tests for core functionality. To run the tests:
 
-### Using the test runner script:
-```bash
-python run_tests.py
-```
-
-### Using pytest directly:
 ```bash
 pytest tests/
-```
-
-### Using the project script:
-```bash
-python -m pyproject.toml test
 ```
 
 Tests cover the resume parsing functionality, including:
@@ -59,62 +106,7 @@ Tests cover the resume parsing functionality, including:
 - Handling unsupported file formats
 - Error handling for corrupted or inaccessible files
 
-## Usage
-
-### Basic Implementation
-
-```python
-from interview_agent import InterviewAgent
-
-# Initialize the agent
-agent = InterviewAgent()
-
-# Start the interview process
-resume_md = agent.upload_resume("path/to/resume.pdf")
-agent.analyze_resume(resume_md)
-agent.prepare_questions()
-
-# Conduct interview (in practice, this would be interactive)
-# ...
-
-# Assign coding challenge
-challenge = agent.assign_coding_challenge()
-
-# Evaluate solution
-analysis = agent.evaluate_coding_solution(code_submission)
-
-# Score the interview
-score, feedback = agent.score_interview(analysis)
-```
-
-### LangGraph Implementation
-
-```python
-from run_interview_example import run_interview_with_file
-
-# Run with a specific resume file
-final_state = run_interview_with_file("path/to/resume.pdf")
-```
-
-### Running with a Real Resume File
-
-```python
-from run_interview_example import run_interview_with_file
-
-# Run with a specific resume file
-final_state = run_interview_with_file("path/to/resume.pdf")
-```
-
-The system supports three resume formats:
-- **PDF files** (`.pdf`)
-- **Word documents** (`.docx`)
-- **Markdown files** (`.md`, `.markdown`)
-
-If parsing fails or no file path is provided, the system will display an appropriate error message rather than using default content.
-
 ## Architecture
-
-### Standard Implementation
 
 The system consists of several specialized components:
 
@@ -126,8 +118,6 @@ The system consists of several specialized components:
 - `CodeAnalyzer`: Reviews submitted code solutions
 - `InterviewScorer`: Calculates final scores and feedback
 - `InterviewAgent`: Orchestrates the entire process
-
-### LangGraph Implementation
 
 The LangGraph version models the interview process as a state machine:
 
@@ -141,6 +131,15 @@ The LangGraph version models the interview process as a state machine:
   4. `assign_coding_challenge` → `evaluate`
   5. `evaluate` → END
 
+## Dependencies
+
+- Python 3.9+
+- LangChain for LLM interactions
+- DeepSeek as the primary LLM
+- PyPDF2 for PDF parsing
+- python-docx for DOCX parsing
+- LangGraph for workflow orchestration
+
 ## Error Handling
 
 The system handles various error conditions gracefully:
@@ -148,6 +147,15 @@ The system handles various error conditions gracefully:
 1. **Missing File Path**: If no file path is provided, an error message is displayed
 2. **Parsing Errors**: If the resume file cannot be parsed, a descriptive error is shown
 3. **Empty Content**: If the parsed content is empty, an appropriate error is raised
+
+## Development
+
+### Project Structure
+
+- `interview_agent/`: Main source code
+  - `core.py`: Main interview logic and workflow
+  - `parser.py`: Resume parsing functionality
+  - `logger.py`: Logging functionality
 
 ## Future Improvements
 
