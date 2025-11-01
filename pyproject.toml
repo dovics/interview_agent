@@ -1,0 +1,24 @@
+[project]
+name = "interview-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "langchain>=0.3.27",
+    "langchain-deepseek>=0.1.4",
+    "langgraph>=0.6.11",
+    "python-dotenv>=1.0.0",
+    "pypdf2>=3.0.0",
+    "python-docx>=1.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "marimo>=0.17.6",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+test = "run_tests:main"
