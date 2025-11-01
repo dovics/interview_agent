@@ -10,7 +10,6 @@ from .types import InterviewState
 def route_question(state: InterviewState) -> str:
     """Route to next question or move to coding challenge"""
     current_index = state.get("current_question_index", 0)
-    follow_up_index = state.get("current_follow_up_index", -1)
     questions = state.get("interview_questions", [])
     stage = state.get("interview_stage", "")
     enable_adaptive_questioning = state.get("enable_adaptive_questioning", True)  # 获取参数
@@ -34,7 +33,6 @@ def route_question(state: InterviewState) -> str:
         return "coding"
     
     current_question_set = questions[current_index]
-    follow_ups = current_question_set.get("follow_up_questions", [])
     
     # Check if we need to ask an adaptive question
     answers = current_question_set.get("answers", [])
@@ -47,11 +45,8 @@ def route_question(state: InterviewState) -> str:
     if enable_adaptive_questioning and answers and len(adaptive_questions) < len(answers):
         return "adaptive_questioning"
     
-    # If we're on the main question (-1) or haven't finished follow-ups, continue questioning
-    if follow_up_index < len(follow_ups) - 1:
-        return "continue_questioning"
-    # If we've finished follow-ups and there are more question sets, go to next set
-    elif current_index < len(questions) - 1:
+    # Move to next question set if there are more questions
+    if current_index < len(questions) - 1:
         return "next_question_set"
     # Otherwise, move to coding challenge
     else:

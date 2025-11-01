@@ -45,7 +45,6 @@ def create_interview_graph() -> StateGraph:
         "generate_questions",
         route_question,
         {
-            "continue_questioning": "ask_question",
             "next_question_set": "ask_question",
             "adaptive_questioning": "generate_adaptive_questions",
             "coding": "generate_coding_challenge"
@@ -59,7 +58,6 @@ def create_interview_graph() -> StateGraph:
         "next_question",
         route_question,
         {
-            "continue_questioning": "ask_question",
             "next_question_set": "ask_question",
             "adaptive_questioning": "generate_adaptive_questions",
             "coding": "generate_coding_challenge"

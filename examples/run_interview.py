@@ -23,7 +23,7 @@ def main():
     
     try:
         print(f"Running interview with resume: {resume_path}")
-        result = run_interview(resume_path)
+        result = run_interview(resume_path, enable_adaptive_questioning=True)
         
         print("\n" + "="*50)
         print("INTERVIEW RESULTS")

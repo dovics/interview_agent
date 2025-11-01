@@ -156,16 +156,12 @@ def generate_questions_node(state: InterviewState) -> Dict[str, Any]:
             Description: {topic['description']}
             Technologies: {', '.join(topic['technologies'])}
             
-            Generate a main interview question and 2 follow-up questions about this project.
+            Generate a main interview question about this project.
             
             Format your response as JSON with this structure:
             {{
               "topic": "{topic['title']}",
-              "question": "Main question about the project",
-              "follow_up_questions": [
-                "Follow-up question 1",
-                "Follow-up question 2"
-              ]
+              "question": "Main question about the project"
             }}
             """
         else:  # technical point
@@ -174,16 +170,12 @@ def generate_questions_node(state: InterviewState) -> Dict[str, Any]:
             Name: {topic['name']}
             Description: {topic['description']}
             
-            Generate a main interview question and 2 follow-up questions about this technical skill.
+            Generate a main interview question about this technical skill.
             
             Format your response as JSON with this structure:
             {{
               "topic": "{topic['name']}",
-              "question": "Main question about the technical skill",
-              "follow_up_questions": [
-                "Follow-up question 1",
-                "Follow-up question 2"
-              ]
+              "question": "Main question about the technical skill"
             }}
             """
         
@@ -410,33 +402,14 @@ def next_question_node(state: InterviewState) -> Dict[str, Any]:
         log_node_execution("next_question_node", state, output)
         return output
     
-    current_q_set = questions[current_index]
-    follow_ups = current_q_set.get("follow_up_questions", [])
-    
-    # If we're on the main question (-1) or haven't finished follow-ups, continue with follow-ups
-    if follow_up_index < len(follow_ups) - 1:
-        # Move to next follow-up question
-        output = {
-            "current_follow_up_index": follow_up_index + 1,
-            "interview_stage": "questioning"
-        }
-        log_node_execution("next_question_node", state, output)
-        return output
-    # If we've finished follow-ups and there are more question sets, go to next set
-    elif current_index < len(questions) - 1:
-        # Move to next main question
-        output = {
-            "current_question_index": current_index + 1,
-            "current_follow_up_index": -1,  # Reset to main question
-            "interview_stage": "questioning"
-        }
-        log_node_execution("next_question_node", state, output)
-        return output
-    # Otherwise, move to coding challenge
-    else:
-        output = {"interview_stage": "coding"}
-        log_node_execution("next_question_node", state, output)
-        return output
+    # Move to next main question
+    output = {
+        "current_question_index": current_index + 1,
+        "current_follow_up_index": -1,  # Reset to main question
+        "interview_stage": "questioning"
+    }
+    log_node_execution("next_question_node", state, output)
+    return output
 
 
 def generate_coding_challenge_node(state: InterviewState) -> Dict[str, Any]:
