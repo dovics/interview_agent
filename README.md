@@ -48,6 +48,7 @@ python main.py path/to/resume.pdf
 Options:
 - `--output`, `-o`: Save results to a JSON file
 - `--log-level`, `-l`: Set logging level (DEBUG, INFO, WARNING, ERROR). Default is INFO.
+- `--no-adaptive-questioning`: Disable adaptive questioning based on user responses.
 
 Examples:
 ```bash
@@ -59,6 +60,9 @@ python main.py resume.pdf --output interview_results.json
 
 # Run with debug logging
 python main.py resume.pdf --log-level DEBUG
+
+# Run without adaptive questioning
+python main.py resume.pdf --no-adaptive-questioning
 ```
 
 ### As a Module
@@ -66,7 +70,12 @@ python main.py resume.pdf --log-level DEBUG
 ```python
 from interview_agent import run_interview
 
+# Run with adaptive questioning (default)
 result = run_interview("path/to/resume.pdf")
+
+# Run without adaptive questioning
+result = run_interview("path/to/resume.pdf", enable_adaptive_questioning=False)
+
 print(f"Score: {result['final_score']}/100")
 print(f"Feedback: {result['final_feedback']}")
 ```
@@ -89,9 +98,30 @@ You can set the log level in three ways:
 2. **Resume Analysis**: Uses LLM to extract projects and technical skills
 3. **Question Generation**: Creates targeted interview questions
 4. **Interactive Interview**: Conducts multi-round questioning
-5. **Adaptive Questioning**: Generates follow-up questions based on responses
+5. **Adaptive Questioning**: Generates follow-up questions based on responses (optional)
 6. **Coding Challenge**: Provides a coding task
 7. **Evaluation**: Scores the candidate based on all responses
+
+## Development
+
+### Running Tests
+
+```bash
+pytest
+```
+
+### Project Structure
+
+- `interview_agent/`: Main source code
+  - `core.py`: Main interface for running the interview
+  - `workflow.py`: LangGraph workflow definition
+  - `nodes.py`: All node functions for the workflow
+  - `routing.py`: Routing logic for conditional edges
+  - `types.py`: Type definitions and data classes
+  - `parser.py`: Resume parsing functionality
+  - `logger.py`: Logging functionality
+- `examples/`: Example files
+- `tests/`: Unit tests
 
 ## Testing
 
@@ -147,15 +177,6 @@ The system handles various error conditions gracefully:
 1. **Missing File Path**: If no file path is provided, an error message is displayed
 2. **Parsing Errors**: If the resume file cannot be parsed, a descriptive error is shown
 3. **Empty Content**: If the parsed content is empty, an appropriate error is raised
-
-## Development
-
-### Project Structure
-
-- `interview_agent/`: Main source code
-  - `core.py`: Main interview logic and workflow
-  - `parser.py`: Resume parsing functionality
-  - `logger.py`: Logging functionality
 
 ## Future Improvements
 

@@ -47,6 +47,12 @@ Examples:
         type=str
     )
     
+    parser.add_argument(
+        "--no-adaptive-questioning",
+        help="Disable adaptive questioning based on user responses",
+        action="store_true"
+    )
+    
     args = parser.parse_args()
     
     # 设置日志级别
@@ -64,10 +70,12 @@ Examples:
     
     try:
         print(f"Starting interview with resume: {resume_path}")
+        if args.no_adaptive_questioning:
+            print("Adaptive questioning is disabled.")
         print("=" * 60)
         
         # Run the interview
-        result = run_interview(str(resume_path))
+        result = run_interview(str(resume_path), not args.no_adaptive_questioning)
         
         # Display results
         print("\n" + "=" * 60)
