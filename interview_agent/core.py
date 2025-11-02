@@ -13,7 +13,7 @@ from .logger import set_log_level
 
 load_dotenv()
 
-# 从环境变量获取日志级别，如果没有设置则默认为INFO
+# Get log level from environment variable, default to INFO if not set
 log_level = os.getenv("LOG_LEVEL", "INFO")
 set_log_level(log_level)
 

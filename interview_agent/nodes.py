@@ -17,7 +17,7 @@ from .types import InterviewState
 
 def analyze_resume_node(state: InterviewState) -> Dict[str, Any]:
     """Node for analyzing resume and extracting projects and technical points"""
-    # 记录节点执行开始
+    # Record node execution start
     log_node_execution("analyze_resume_node", state, {})
 
     model = init_chat_model("deepseek-chat", temperature=0)
@@ -65,7 +65,7 @@ def analyze_resume_node(state: InterviewState) -> Dict[str, Any]:
             ]
         )
 
-        # 记录LLM调用
+        # Record LLM call
         log_llm_call("deepseek-chat", prompt, response.content)
 
         # Parse the JSON response
@@ -81,7 +81,7 @@ def analyze_resume_node(state: InterviewState) -> Dict[str, Any]:
             "interview_stage": "questioning",
         }
 
-        # 记录节点执行结束
+        # Record node execution end
         log_node_execution("analyze_resume_node", state, output)
         return output
     except Exception as e:
@@ -90,7 +90,7 @@ def analyze_resume_node(state: InterviewState) -> Dict[str, Any]:
 
 def generate_questions_node(state: InterviewState) -> Dict[str, Any]:
     """Node for generating interview questions"""
-    # 记录节点执行开始
+    # Record node execution start
     log_node_execution("generate_questions_node", state, {})
 
     model = init_chat_model("deepseek-chat", temperature=0.7)
@@ -159,7 +159,7 @@ def generate_questions_node(state: InterviewState) -> Dict[str, Any]:
                 ]
             )
 
-            # 记录LLM调用
+            # Record LLM call
             log_llm_call("deepseek-chat", prompt, response.content)
 
             parser = JsonOutputParser()
@@ -178,20 +178,20 @@ def generate_questions_node(state: InterviewState) -> Dict[str, Any]:
         "interview_stage": "questioning",
     }
 
-    # 记录节点执行结束
+    # Record node execution end
     log_node_execution("generate_questions_node", state, output)
     return output
 
 
 def ask_question_node(state: InterviewState) -> Dict[str, Any]:
     """Node for presenting questions to the candidate and collecting answers"""
-    # 记录节点执行开始
+    # Record node execution start
     log_node_execution("ask_question_node", state, {})
 
     questions = state.get("interview_questions", [])
     current_index = state.get("current_question_index", 0)
     follow_up_index = state.get("current_follow_up_index", -1)
-    mode = state.get("mode", "cli")  # 获取运行模式
+    mode = state.get("mode", "cli")  # Get run mode
 
     if not questions or current_index >= len(questions):
         output = {"interview_stage": "coding"}
@@ -254,14 +254,14 @@ def ask_question_node(state: InterviewState) -> Dict[str, Any]:
         "interview_stage": "questioning",
     }
 
-    # 记录节点执行结束
+    # Record node execution end
     log_node_execution("ask_question_node", state, output)
     return output
 
 
 def generate_adaptive_questions_node(state: InterviewState) -> Dict[str, Any]:
     """Node for generating adaptive follow-up questions based on candidate's answers"""
-    # 记录节点执行开始
+    # Record node execution start
     log_node_execution("generate_adaptive_questions_node", state, {})
 
     model = init_chat_model("deepseek-chat", temperature=0.7)
@@ -329,7 +329,7 @@ def generate_adaptive_questions_node(state: InterviewState) -> Dict[str, Any]:
             ]
         )
 
-        # 记录LLM调用
+        # Record LLM call
         log_llm_call("deepseek-chat", prompt, response.content)
 
         parser = JsonOutputParser()
@@ -369,7 +369,7 @@ def generate_adaptive_questions_node(state: InterviewState) -> Dict[str, Any]:
 
 def analyze_response_quality_node(state: InterviewState) -> Dict[str, Any]:
     """Node for analyzing response quality and deciding whether to ask follow-up questions"""
-    # 记录节点执行开始
+    # Record node execution start
     log_node_execution("analyze_response_quality_node", state, {})
     enable_adaptive_questioning = state.get("enable_adaptive_questioning", False) 
     if not enable_adaptive_questioning:
@@ -449,7 +449,7 @@ def analyze_response_quality_node(state: InterviewState) -> Dict[str, Any]:
             ]
         )
 
-        # 记录LLM调用
+        # Record LLM call
         log_llm_call("deepseek-chat", prompt, response.content)
 
         parser = JsonOutputParser()
@@ -486,14 +486,14 @@ def analyze_response_quality_node(state: InterviewState) -> Dict[str, Any]:
         print(f"Warning: Could not analyze response quality: {str(e)}")
         output = {"should_ask_follow_up": False}
 
-    # 记录节点执行结束
+    # Record node execution end
     log_node_execution("analyze_response_quality_node", state, output)
     return output
 
 
 def next_question_node(state: InterviewState) -> Dict[str, Any]:
     """Node for determining the next question to ask"""
-    # 记录节点执行开始
+    # Record node execution start
     log_node_execution("next_question_node", state, {})
 
     questions = state.get("interview_questions", [])
@@ -516,7 +516,7 @@ def next_question_node(state: InterviewState) -> Dict[str, Any]:
 
 def generate_coding_challenge_node(state: InterviewState) -> Dict[str, Any]:
     """Node for generating a coding challenge"""
-    # 记录节点执行开始
+    # Record node execution start
     log_node_execution("generate_coding_challenge_node", state, {})
 
     model = init_chat_model("deepseek-chat", temperature=0.5)
@@ -544,7 +544,7 @@ def generate_coding_challenge_node(state: InterviewState) -> Dict[str, Any]:
             ]
         )
 
-        # 记录LLM调用
+        # Record LLM call
         log_llm_call("deepseek-chat", prompt, response.content)
 
         parser = JsonOutputParser()
@@ -569,14 +569,14 @@ def generate_coding_challenge_node(state: InterviewState) -> Dict[str, Any]:
         "interview_questions": questions,
     }
 
-    # 记录节点执行结束
+    # Record node execution end
     log_node_execution("generate_coding_challenge_node", state, output)
     return output
 
 
 def evaluate_responses_node(state: InterviewState) -> Dict[str, Any]:
     """Node for evaluating candidate responses"""
-    # 记录节点执行开始
+    # Record node execution start
     log_node_execution("evaluate_responses_node", state, {})
 
     model = init_chat_model("deepseek-chat", temperature=0)
@@ -616,7 +616,7 @@ def evaluate_responses_node(state: InterviewState) -> Dict[str, Any]:
             ]
         )
 
-        # 记录LLM调用
+        # Record LLM call
         log_llm_call("deepseek-chat", prompt, response.content)
 
         parser = JsonOutputParser()
@@ -629,7 +629,7 @@ def evaluate_responses_node(state: InterviewState) -> Dict[str, Any]:
             "interview_stage": "completed",
         }
 
-        # 记录节点执行结束
+        # Record node execution end
         log_node_execution("evaluate_responses_node", state, output)
         return output
     except Exception as e:

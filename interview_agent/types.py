@@ -4,9 +4,7 @@ Type definitions for the Interview Agent.
 This module contains all the type definitions used in the interview agent.
 """
 
-import json
-import os
-from typing import List, Dict, Any, Annotated, Optional, Tuple
+from typing import List, Dict, Any, Annotated, Optional
 from typing_extensions import TypedDict
 from dataclasses import dataclass, field
 from enum import Enum
@@ -66,5 +64,5 @@ class InterviewState(TypedDict):
     final_score: Optional[int]
     final_feedback: Optional[str]
     interview_stage: str  # resume_upload, resume_analysis, questioning, coding, evaluation, completed
-    enable_adaptive_questioning: bool  # 控制是否启用自适应提问
-    mode: str  # 运行模式: "server" or "cli"
+    enable_adaptive_questioning: bool  # Control whether to enable adaptive questioning
+    mode: str  # Run mode: "server" or "cli"

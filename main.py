@@ -6,7 +6,6 @@ This script allows users to run the interview agent from the command line.
 
 import argparse
 import sys
-import os
 from pathlib import Path
 
 from interview_agent.core import run_interview
@@ -78,7 +77,7 @@ Examples:
     
     args = parser.parse_args()
     
-    # 设置日志级别
+    # Set log level
     set_log_level(args.log_level)
     
     # Start HTTP server if requested

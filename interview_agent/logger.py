@@ -1,31 +1,30 @@
 import logging
-import os
 from typing import Any, Dict
 from functools import wraps
 
-# 创建日志记录器
+# Create logger
 logger = logging.getLogger('interview_agent')
 logger.setLevel(logging.DEBUG)
 
-# 创建控制台处理器
+# Create console handler
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 
-# 创建格式器
+# Create formatter
 formatter = logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 console_handler.setFormatter(formatter)
 
-# 将处理器添加到日志记录器
+# Add handler to logger
 logger.addHandler(console_handler)
 
 def set_log_level(level: str):
     """
-    设置日志级别
+    Set log level
     
     Args:
-        level: 日志级别 ('DEBUG', 'INFO', 'WARNING', 'ERROR')
+        level: Log level ('DEBUG', 'INFO', 'WARNING', 'ERROR')
     """
     level_map = {
         'DEBUG': logging.DEBUG,
@@ -40,12 +39,12 @@ def set_log_level(level: str):
 
 def log_tool_call(tool_name: str, args: Dict[str, Any], result: Any):
     """
-    记录工具调用
+    Log tool call
     
     Args:
-        tool_name: 工具名称
-        args: 工具参数
-        result: 工具返回结果
+        tool_name: Tool name
+        args: Tool arguments
+        result: Tool result
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(f"Tool call: {tool_name}")
@@ -56,12 +55,12 @@ def log_tool_call(tool_name: str, args: Dict[str, Any], result: Any):
 
 def log_llm_call(model_name: str, prompt: str, response: str):
     """
-    记录LLM调用
+    Log LLM call
     
     Args:
-        model_name: 模型名称
-        prompt: 提示词
-        response: 模型响应
+        model_name: Model name
+        prompt: Prompt text
+        response: Model response
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(f"LLM call: {model_name}")
@@ -72,39 +71,46 @@ def log_llm_call(model_name: str, prompt: str, response: str):
 
 def log_node_execution(node_name: str, input_state: Dict[str, Any], output_state: Dict[str, Any]):
     """
-    记录节点执行
+    Log node execution
     
     Args:
-        node_name: 节点名称
-        input_state: 输入状态
-        output_state: 输出状态
+        node_name: Node name
+        input_state: Input state
+        output_state: Output state
     """
-    logger.info(f"Executing node: {node_name}")
+    # Determine if it's start or end
+    if output_state is None or output_state == {}:
+        status = "start"
+    else:
+        status = "end"
+    
+    logger.info(f"Node {status}: {node_name}")
     
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(f"Input state: {input_state}")
-        logger.debug(f"Output state: {output_state}")
+        if output_state is not None and output_state != {}:
+            logger.debug(f"Output state: {output_state}")
 
 def logged_tool(tool_func):
     """
-    装饰器：为工具函数添加日志记录
+    Decorator: Add logging to tool functions
     
     Args:
-        tool_func: 工具函数
+        tool_func: Tool function
     """
     @wraps(tool_func)
     def wrapper(*args, **kwargs):
         tool_name = tool_func.__name__
         
-        # 记录输入
+        # Log input
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"Calling tool {tool_name} with args: {args}, kwargs: {kwargs}")
         
-        # 执行工具
+        # Execute tool
         try:
             result = tool_func(*args, **kwargs)
             
-            # 记录结果
+            # Log result
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"Tool {tool_name} returned: {result}")
             else:
@@ -119,20 +125,20 @@ def logged_tool(tool_func):
 
 def logged_llm_call(func):
     """
-    装饰器：为LLM调用添加日志记录
+    Decorator: Add logging to LLM calls
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        # 执行函数
+        # Execute function
         result = func(*args, **kwargs)
         
-        # 记录LLM调用信息
+        # Log LLM call info
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"LLM call args: {args}")
             logger.debug(f"LLM call kwargs: {kwargs}")
             logger.debug(f"LLM response: {result}")
         else:
-            # 只记录基本信息
+            # Log basic info only
             if args and hasattr(args[0], '__class__'):
                 model_name = args[0].__class__.__name__
                 logger.info(f"Called LLM: {model_name}")
