@@ -10,7 +10,7 @@ import uuid
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 
-from fastapi import FastAPI, UploadFile, HTTPException, BackgroundTasks
+from fastapi import FastAPI, UploadFile, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from langgraph.types import Command
@@ -79,9 +79,10 @@ interview_graphs: Dict[str, Any] = {}  # Store compiled graphs
 app = FastAPI(
     title="Interview Agent API",
     description="API for conducting technical interviews based on resumes",
-    version="0.1.0",
+    version="1.0.0",
 )
 
+apiV1 = APIRouter(prefix='/api/v1') 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -91,6 +92,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+apiV1 = APIRouter(prefix="/api/v1")
+
 
 @app.get("/")
 async def root():
@@ -98,7 +101,7 @@ async def root():
     return {"message": "Interview Agent API is running"}
 
 
-@app.post("/interview/start", response_model=InterviewStartResponse)
+@apiV1.post("/interview/start", response_model=InterviewStartResponse)
 async def start_interview(file: UploadFile, adaptive_questioning: bool = True):
     """
     Start an interview session with an uploaded resume file.
@@ -112,7 +115,7 @@ async def start_interview(file: UploadFile, adaptive_questioning: bool = True):
     """
     # Generate a session ID
     session_id = str(uuid.uuid4())
-    print("-------------", adaptive_questioning)
+
     try:
         # Save uploaded file temporarily
         file_extension = Path(file.filename).suffix if file.filename else ".tmp"
@@ -173,7 +176,7 @@ async def start_interview(file: UploadFile, adaptive_questioning: bool = True):
         )
 
 
-@app.post("/interview/{session_id}/question", response_model=QuestionResponse)
+@apiV1.post("/interview/{session_id}/question", response_model=QuestionResponse)
 async def get_next_question(session_id: str, answer: AnswerRequest = None):
     """
     Get the next question in the interview.
@@ -263,7 +266,7 @@ async def get_next_question(session_id: str, answer: AnswerRequest = None):
         )
 
 
-@app.get("/interview/{session_id}/result", response_model=InterviewResult)
+@apiV1.get("/interview/{session_id}/result", response_model=InterviewResult)
 async def get_interview_result(session_id: str):
     """
     Get the final result of the interview.
@@ -325,7 +328,7 @@ async def get_interview_result(session_id: str):
         )
 
 
-@app.delete("/interview/{session_id}")
+@apiV1.delete("/interview/{session_id}")
 async def end_interview(session_id: str):
     """
     End the interview session and clean up resources.
@@ -342,7 +345,9 @@ async def end_interview(session_id: str):
     return {"message": "Interview session ended successfully"}
 
 
-@app.get("/health")
+@apiV1.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
+
+app.include_router(apiV1)

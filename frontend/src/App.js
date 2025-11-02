@@ -65,7 +65,7 @@ function App() {
     setError('');
 
     try {
-      const url = 'http://192.168.1.20:8000/interview/start?adaptive_questioning=' + (adaptiveQuestioning ? 'True' : 'False')
+      const url = '/api/v1/interview/start?adaptive_questioning=' + (adaptiveQuestioning ? 'True' : 'False')
       const response = await fetch(url, {
         method: 'POST',
         body: formData,

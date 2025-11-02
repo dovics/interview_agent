@@ -29,7 +29,7 @@ function Results({ sessionId, language, onBack }) {
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        const response = await fetch(`http://192.168.1.20:8000/interview/${sessionId}/result`);
+        const response = await fetch(`/api/v1/interview/${sessionId}/result`);
         
         if (response.ok) {
           const data = await response.json();

@@ -73,7 +73,7 @@ function Chat({ sessionId, language, onBack, onViewResults }) {
     setError('');
 
     try {
-      const response = await fetch(`http://192.168.1.20:8000/interview/${sessionId}/question`, {
+      const response = await fetch(`/api/v1/interview/${sessionId}/question`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ function Chat({ sessionId, language, onBack, onViewResults }) {
     setError('');
 
     try {
-      const response = await fetch(`http://192.168.1.20:8000/interview/${sessionId}/answer`, {
+      const response = await fetch(`/api/v1/interview/${sessionId}/answer`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
