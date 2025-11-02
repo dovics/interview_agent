@@ -11,7 +11,9 @@ from typing import Dict, Any, Optional, List
 from pathlib import Path
 
 from fastapi import FastAPI, UploadFile, HTTPException, APIRouter
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
 from langgraph.types import Command
 from langgraph.checkpoint.memory import InMemorySaver
@@ -95,10 +97,10 @@ app.add_middleware(
 apiV1 = APIRouter(prefix="/api/v1")
 
 
-@app.get("/")
-async def root():
-    """Root endpoint"""
-    return {"message": "Interview Agent API is running"}
+# @app.get("/")
+# async def root():
+#     """Root endpoint"""
+#     return {"message": "Interview Agent API is running"}
 
 
 @apiV1.post("/interview/start", response_model=InterviewStartResponse)
@@ -351,3 +353,32 @@ async def health_check():
     return {"status": "healthy"}
 
 app.include_router(apiV1)
+
+# Serve frontend static files
+frontend_build_path = Path(__file__).parent.parent / "frontend" / "build"
+print(f"Serving frontend from {frontend_build_path}")
+if frontend_build_path.exists():
+    # Mount static files directory
+    if (frontend_build_path / "static").exists():
+        app.mount("/static", StaticFiles(directory=frontend_build_path / "static"), name="static")
+    
+    # Serve index.html for root path
+    @app.get("/", response_class=HTMLResponse, include_in_schema=False)
+    async def serve_frontend():
+        try:
+            with open(frontend_build_path / "index.html", "r") as file:
+                return HTMLResponse(content=file.read(), status_code=200)
+        except FileNotFoundError:
+            return HTMLResponse(content="<h1>Frontend build not found</h1>", status_code=404)
+    
+    # Serve manifest.json
+    @app.get("/manifest.json", include_in_schema=False)
+    async def serve_manifest():
+        if (frontend_build_path / "manifest.json").exists():
+            return FileResponse(frontend_build_path / "manifest.json")
+        return {"message": "Manifest not found"}
+else:
+    @app.get("/")
+    async def root():
+        """Root endpoint"""
+        return {"message": "Interview Agent API is running", "path": frontend_build_path}
