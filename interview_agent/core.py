@@ -4,19 +4,8 @@ Main entry point for the Interview Agent core functionality.
 This module provides the main interface for running the interview agent.
 """
 
-import json
 import os
-from typing import List, Dict, Any, Annotated, Optional, Tuple
-import sys
-from typing_extensions import TypedDict
-from dataclasses import dataclass, field
-from enum import Enum
-import operator
-from langchain.chat_models import init_chat_model
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langchain_core.output_parsers import JsonOutputParser
-from langchain.tools import tool
-from langgraph.graph import StateGraph, START, END
+from typing import Dict, Any
 from dotenv import load_dotenv
 
 from .workflow import create_interview_graph
@@ -28,7 +17,7 @@ load_dotenv()
 log_level = os.getenv("LOG_LEVEL", "INFO")
 set_log_level(log_level)
 
-def run_interview(file_path: str, enable_adaptive_questioning: bool = True) -> Dict[str, Any]:
+def run_interview(resume_content: str, enable_adaptive_questioning: bool = True) -> Dict[str, Any]:
     """Run the full interview process"""
     # Create the graph
     graph = create_interview_graph()
@@ -37,8 +26,8 @@ def run_interview(file_path: str, enable_adaptive_questioning: bool = True) -> D
     
     # Initial state
     initial_state = {
-        "messages": [{"file_path": file_path}],
-        "resume_content": "",
+        "messages": [],
+        "resume_content": resume_content,
         "projects": [],
         "technical_points": [],
         "interview_questions": [],
@@ -49,8 +38,8 @@ def run_interview(file_path: str, enable_adaptive_questioning: bool = True) -> D
         "evaluation": None,
         "final_score": None,
         "final_feedback": None,
-        "interview_stage": "resume_upload",
-        "enable_adaptive_questioning": enable_adaptive_questioning  # 添加新参数到状态中
+        "interview_stage": "resume_analysis",
+        "enable_adaptive_questioning": enable_adaptive_questioning
     }
     
     # Run the interview with increased recursion limit

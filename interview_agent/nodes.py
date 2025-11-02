@@ -10,43 +10,8 @@ from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.output_parsers import JsonOutputParser
 
-from .parser import parse_resume
 from .logger import log_node_execution, log_llm_call
 from .types import InterviewState
-
-
-def upload_resume_node(state: InterviewState) -> Dict[str, Any]:
-    """Node for uploading and parsing resume"""
-    # 记录节点执行开始
-    log_node_execution("upload_resume_node", state, {})
-    
-    # Get file path from state
-    file_path = state.get("messages", [{}])[0].get("file_path") if state.get("messages") else None
-    
-    # If no file path provided, raise an error
-    if not file_path:
-        raise ValueError("No resume file path provided. Please provide a path to a PDF, DOCX, or Markdown file.")
-    
-    try:
-        # Parse the actual file
-        resume_content = parse_resume(file_path)
-        
-        # Check if resume content is empty
-        if not resume_content or not resume_content.strip():
-            raise ValueError(f"Parsed resume content is empty for file: {file_path}")
-            
-    except Exception as e:
-        # If parsing fails, raise an error with details
-        raise ValueError(f"Failed to parse resume file '{file_path}': {str(e)}")
-    
-    result = {
-        "resume_content": resume_content,
-        "interview_stage": "resume_analysis"
-    }
-    
-    # 记录节点执行结束
-    log_node_execution("upload_resume_node", state, result)
-    return result
 
 
 def analyze_resume_node(state: InterviewState) -> Dict[str, Any]:

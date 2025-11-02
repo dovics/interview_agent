@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 
 from interview_agent.core import run_interview
+from interview_agent.parser import parse_resume
 from interview_agent import set_log_level
 
 
@@ -74,8 +75,11 @@ Examples:
             print("Adaptive questioning is disabled.")
         print("=" * 60)
         
+        # Parse resume before starting the interview workflow
+        resume_content = parse_resume(str(resume_path))
+        
         # Run the interview
-        result = run_interview(str(resume_path), not args.no_adaptive_questioning)
+        result = run_interview(resume_content, not args.no_adaptive_questioning)
         
         # Display results
         print("\n" + "=" * 60)
