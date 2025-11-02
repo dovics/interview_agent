@@ -41,6 +41,7 @@ class InterviewQuestion:
     question: str
     follow_up_questions: List[str] = field(default_factory=list)
     answers: List[str] = field(default_factory=list)  # Store candidate's answers
+    response_analysis: List[Any] = field(default_factory=list)
 
 @dataclass
 class CodingChallenge:
@@ -58,6 +59,7 @@ class InterviewState(TypedDict):
     technical_points: List[Dict[str, Any]]
     interview_questions: List[Dict[str, Any]]
     current_question_index: int
+    should_ask_follow_up: bool
     current_follow_up_index: int
     coding_challenge: Optional[Dict[str, Any]]
     coding_solution: Optional[str]

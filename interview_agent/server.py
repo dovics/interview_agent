@@ -281,12 +281,11 @@ async def get_interview_result(session_id: str):
 
         # If interview is not completed yet, run it to completion
         if state["interview_stage"] != "completed" and session_id in interview_graphs:
-            app_graph = interview_graphs[session_id]
-            final_state = app_graph.invoke(
-                state, config={"recursion_limit": 100, "thread_id": session_id}
+            return InterviewResult(
+                final_score=None,
+                final_feedback=None,
+                status="in_progress",
             )
-            interview_sessions[session_id] = final_state
-            state = final_state
 
         return InterviewResult(
             final_score=state.get("final_score"),

@@ -269,8 +269,7 @@ def generate_adaptive_questions_node(state: InterviewState) -> Dict[str, Any]:
     questions = state.get("interview_questions", [])
     current_index = state.get("current_question_index", 0)
     follow_up_index = state.get("current_follow_up_index", -1)
-    mode = state.get("mode", "cli")  # 获取运行模式
-
+    
     if not questions or current_index >= len(questions):
         output = {}
         log_node_execution("generate_adaptive_questions_node", state, output)
@@ -337,50 +336,155 @@ def generate_adaptive_questions_node(state: InterviewState) -> Dict[str, Any]:
         result = parser.parse(response.content)
         adaptive_question = result.get("adaptive_question", "")
 
-        # Display the adaptive question to the candidate
-        if adaptive_question:
-            # Check if we're in server mode
-            if mode == "server":
-                # In server mode, we don't wait for input here.
-                # The question will be returned via the API and the answer will come through the API as well.
-                # We just return the question information for the API to handle
-                adaptive_answer = interrupt(
-                    {"question": adaptive_question, "question_type": "follow-up"}
-                )
-
-            else:
-                # Display the question to the candidate
-                print(f"\nQuestion: {adaptive_question}")
-                print("-" * 50)
-
-                # Get answer from terminal input (CLI mode)
-                adaptive_answer = input("Your answer: ").strip()
-
-            # Update the interview questions with the adaptive question and answer
-            updated_questions = list(questions)
-            current_q_set_copy = dict(updated_questions[current_index])
-
-            # Add adaptive question and answer to the set
-            if "adaptive_questions" not in current_q_set_copy:
-                current_q_set_copy["adaptive_questions"] = []
-
-            current_q_set_copy["adaptive_questions"].append(
-                {"question": adaptive_question, "answer": adaptive_answer}
-            )
-
-            updated_questions[current_index] = current_q_set_copy
-
-            output = {"interview_questions": updated_questions}
-
-            # 记录节点执行结束
-            log_node_execution("generate_adaptive_questions_node", state, output)
-            return output
     except Exception as e:
         # If we can't generate an adaptive question, continue with regular flow
         print(f"Warning: Could not generate adaptive question: {str(e)}")
 
-    output = {}
+        output = {}
+        log_node_execution("generate_adaptive_questions_node", state, output)
+        return output
+
+    # Insert the adaptive question into follow-up questions
+    updated_questions = list(questions)
+    current_q_set_copy = dict(updated_questions[current_index])
+    
+    # Initialize follow_up_questions list if it doesn't exist
+    if "follow_up_questions" not in current_q_set_copy:
+        current_q_set_copy["follow_up_questions"] = []
+    
+    # Add adaptive question to follow-up questions
+    current_q_set_copy["follow_up_questions"].append(adaptive_question)
+    
+    # Update the questions in the state
+    updated_questions[current_index] = current_q_set_copy
+    
+    output = {
+        "interview_questions": updated_questions,
+        "current_follow_up_index": len(current_q_set_copy["follow_up_questions"]) - 1
+    }
+    
     log_node_execution("generate_adaptive_questions_node", state, output)
+    return output
+
+
+def analyze_response_quality_node(state: InterviewState) -> Dict[str, Any]:
+    """Node for analyzing response quality and deciding whether to ask follow-up questions"""
+    # 记录节点执行开始
+    log_node_execution("analyze_response_quality_node", state, {})
+    if not state.get("enable_adaptive_questioning", False):
+        output = {}
+        log_node_execution("analyze_response_quality_node", state, output)
+        return output
+    
+    model = init_chat_model("deepseek-chat", temperature=0)
+
+    questions = state.get("interview_questions", [])
+    current_index = state.get("current_question_index", 0)
+    
+    if not questions or current_index >= len(questions):
+        output = {}
+        log_node_execution("analyze_response_quality_node", state, output)
+        return output
+
+    current_q_set = questions[current_index]
+    answers = current_q_set.get("answers", [])
+
+    # Only analyze response quality after the candidate has provided an answer
+    if not answers:
+        output = {}
+        log_node_execution("analyze_response_quality_node", state, output)
+        return output
+
+    # Get the latest answer
+    latest_answer = answers[-1]
+    topic = current_q_set.get("topic", "")
+
+    # Determine the type of question (main or follow-up)
+    follow_up_index = state.get("current_follow_up_index", -1)
+    if follow_up_index == -1:
+        question_type = "main"
+        original_question = current_q_set.get("question", "")
+    else:
+        # For follow-up questions, we need to get the correct follow-up question
+        follow_ups = current_q_set.get("follow_up_questions", [])
+        if follow_up_index < len(follow_ups):
+            original_question = follow_ups[follow_up_index]
+        else:
+            original_question = ""
+        question_type = "follow-up"
+
+    prompt = f"""
+    Analyze the candidate's answer and determine if a follow-up question is needed.
+    
+    Topic: {topic}
+    Question Type: {question_type}
+    Original Question: {original_question}
+    Candidate's Answer: {latest_answer}
+    
+    Evaluate the answer on these criteria:
+    1. Is the answer complete and detailed?
+    2. Does it demonstrate understanding of the topic?
+    3. Does it address the core of the question?
+    
+    Based on your analysis, decide if a follow-up question is warranted:
+    - If the answer shows strong understanding and is comprehensive, no follow-up is needed
+    - If the answer is vague, incomplete, or demonstrates lack of knowledge, a follow-up is needed
+    - If the candidate refuses to answer or says they don't know, no follow-up is needed
+    
+    Format your response as JSON with this structure:
+    {{
+      "should_ask_follow_up": true/false,
+      "reasoning": "Explanation for your decision"
+    }}
+    """
+
+    try:
+        response = model.invoke(
+            [
+                SystemMessage(
+                    content="You are an expert technical interviewer skilled at evaluating response quality."
+                ),
+                HumanMessage(content=prompt),
+            ]
+        )
+
+        # 记录LLM调用
+        log_llm_call("deepseek-chat", prompt, response.content)
+
+        parser = JsonOutputParser()
+        result = parser.parse(response.content)
+        should_ask_follow_up = result.get("should_ask_follow_up", False)
+        reasoning = result.get("reasoning", "")
+
+        # Store the analysis in the state
+        updated_questions = list(questions)
+        current_q_set_copy = dict(updated_questions[current_index])
+        
+        # Initialize response_analysis list if it doesn't exist
+        if "response_analysis" not in current_q_set_copy:
+            current_q_set_copy["response_analysis"] = []
+        
+        # Add analysis to the set
+        current_q_set_copy["response_analysis"].append({
+            "answer": latest_answer,
+            "should_ask_follow_up": should_ask_follow_up,
+            "reasoning": reasoning
+        })
+        
+        updated_questions[current_index] = current_q_set_copy
+
+        output = {
+            "interview_questions": updated_questions,
+            "should_ask_follow_up": should_ask_follow_up
+        }
+
+    except Exception as e:
+        # If we can't analyze the response quality, default to not asking follow-up
+        print(f"Warning: Could not analyze response quality: {str(e)}")
+        output = {"should_ask_follow_up": False}
+
+    # 记录节点执行结束
+    log_node_execution("analyze_response_quality_node", state, output)
     return output
 
 
@@ -412,7 +516,6 @@ def generate_coding_challenge_node(state: InterviewState) -> Dict[str, Any]:
     # 记录节点执行开始
     log_node_execution("generate_coding_challenge_node", state, {})
 
-    mode = state.get("mode", "cli")
     model = init_chat_model("deepseek-chat", temperature=0.5)
 
     prompt = """
@@ -443,39 +546,27 @@ def generate_coding_challenge_node(state: InterviewState) -> Dict[str, Any]:
 
         parser = JsonOutputParser()
         challenge = parser.parse(response.content)
-        if mode == "server":
-            # In server mode, we don't wait for input here.
-            # The question will be returned via the API and the answer will come through the API as well.
-            # We just return the question information for the API to handle
-            solution = interrupt(
-                {
-                    "question": challenge.get("title", "")
-                    + "\n"
-                    + challenge.get("description", ""),
-                    "question_type": "code",
-                }
-            )
-
-        else:
-            # Ask for solution from candidate
-            print(f"\nCoding Challenge: {challenge.get('title', '')}")
-            print("=" * 50)
-            print(f"{challenge.get('description', '')}")
-            print("-" * 50)
-            solution = input("Write your solution:\n").strip()
-
-        output = {
-            "coding_challenge": challenge,
-            "coding_solution": solution,
-            "interview_stage": "evaluation",
-        }
-
-        # 记录节点执行结束
-        log_node_execution("generate_coding_challenge_node", state, output)
-        return output
     except Exception as e:
         raise ValueError(f"Failed to generate coding challenge: {str(e)}")
+    
+    # Instead of asking the question directly, prepare it to be asked by another node
+    # Store the challenge information in the state for the question asking node to use
+    
+    questions = state.get("interview_questions", [])
+    questions.append({
+        "topic": "coding",
+        "question": challenge.get("title", "")
+                + "\n"
+                + challenge.get("description", ""),
+    })
 
+    output = {
+        "interview_questions": questions,
+    }
+
+    # 记录节点执行结束
+    log_node_execution("generate_coding_challenge_node", state, output)
+    return output
 
 def evaluate_responses_node(state: InterviewState) -> Dict[str, Any]:
     """Node for evaluating candidate responses"""

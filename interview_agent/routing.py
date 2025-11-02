@@ -16,21 +16,19 @@ def route_question(state: InterviewState) -> str:
     
     # If we're not in questioning stage, route accordingly
     if stage != "questioning":
-        if stage == "coding":
-            return "coding"
-        elif stage == "evaluation":
+        if stage == "evaluation":
             return "evaluation"
         elif stage == "completed":
             return "completed"
-        return "coding"
+        return "evaluation"
     
     # If we have no questions, go to coding
     if not questions:
-        return "coding"
+        return "evaluation"
     
     # If we've gone through all questions, go to coding
     if current_index >= len(questions):
-        return "coding"
+        return "evaluation"
     
     current_question_set = questions[current_index]
     
@@ -38,16 +36,23 @@ def route_question(state: InterviewState) -> str:
     answers = current_question_set.get("answers", [])
     adaptive_questions = current_question_set.get("adaptive_questions", [])
     
+    
     # Only ask adaptive questions if:
     # 1. Adaptive questioning is enabled
     # 2. We have answers
     # 3. We have fewer adaptive questions than regular answers
     if enable_adaptive_questioning and answers and len(adaptive_questions) < len(answers):
-        return "adaptive_questioning"
-    
+        # If we have a decision from response quality analysis, use it
+        should_ask_follow_up = state.get("should_ask_follow_up")
+        if should_ask_follow_up is not None:
+            if should_ask_follow_up:
+                # Reset the flag for next time
+                return "adaptive_questioning"
+
+        
     # Move to next question set if there are more questions
     if current_index < len(questions) - 1:
         return "next_question_set"
     # Otherwise, move to coding challenge
     else:
-        return "coding"
+        return "evaluation"
