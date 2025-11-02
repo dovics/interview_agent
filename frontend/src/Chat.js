@@ -13,6 +13,7 @@ function Chat({ sessionId, language, onBack, onViewResults }) {
   const [showViewResults, setShowViewResults] = useState(false);
   const [firstQuestionFetched, setFirstQuestionFetched] = useState(false);
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
 
   const t = getTranslations(language);
 
@@ -20,9 +21,35 @@ function Chat({ sessionId, language, onBack, onViewResults }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const toggleLanguage = () => {
+    const newLanguage = language === 'zh' ? 'en' : 'zh';
+    // We need to pass this back to the parent component to update the global state
+    window.dispatchEvent(new CustomEvent('languageChange', { detail: newLanguage }));
+  };
+
+  const toggleTheme = () => {
+    const currentTheme = document.querySelector('.App').getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.querySelector('.App').setAttribute('data-theme', newTheme);
+    // We need to pass this back to the parent component to update the global state
+    window.dispatchEvent(new CustomEvent('themeChange', { detail: newTheme }));
+  };
+
+  // 自动调整文本域高度
+  const adjustTextareaHeight = useCallback(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+    }
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [inputValue, adjustTextareaHeight]);
 
   // Function to check if a message already exists in the messages array
   // Only check for agent messages
@@ -94,46 +121,41 @@ function Chat({ sessionId, language, onBack, onViewResults }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!inputValue.trim() || loading) return;
+    
+    if (!inputValue.trim() || loading || showViewResults) return;
 
-    // 添加用户消息
+    // Add user message to chat
     const userMessage = {
       text: inputValue,
       sender: 'user',
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
-    
-    // Deduplicate messages before adding (but user messages won't be checked)
-    setMessages(prev => {
-      if (isDuplicateMessage(userMessage, prev)) {
-        return prev;
-      }
-      return [...prev, userMessage];
-    });
-    
-    const userText = inputValue;
+
+    setMessages(prev => [...prev, userMessage]);
     setInputValue('');
+    
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`http://192.168.1.20:8000/interview/${sessionId}/question`, {
+      const response = await fetch(`http://192.168.1.20:8000/interview/${sessionId}/answer`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ answer: userText }),
+        body: JSON.stringify({ answer: inputValue }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        const newMessage = { 
-          text: data.question, 
+        
+        // Add agent message to chat
+        const newMessage = {
+          text: data.question || data.final_feedback || '...',
           sender: 'agent',
-          timestamp: new Date().toLocaleTimeString()
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         
-        // Deduplicate messages before adding
         setMessages(prev => {
           if (isDuplicateMessage(newMessage, prev)) {
             return prev;
@@ -156,11 +178,26 @@ function Chat({ sessionId, language, onBack, onViewResults }) {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
   return (
     <div className="chat-container">
       <header className="chat-header">
-        <div className="language-switch" onClick={onBack}>
-          {t.back}
+        <div className="controls">
+          <div className="language-switch" onClick={toggleLanguage}>
+            {language === 'zh' ? 'EN' : '中文'}
+          </div>
+          <div className="theme-switch" onClick={toggleTheme}>
+            {document.querySelector('.App')?.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'}
+          </div>
+          <div className="back-button" onClick={onBack}>
+            {t.back}
+          </div>
         </div>
         <h1>{t.interviewAssistant}</h1>
       </header>
@@ -196,12 +233,14 @@ function Chat({ sessionId, language, onBack, onViewResults }) {
       </div>
       
       <form className="chat-input" onSubmit={handleSubmit}>
-        <input
-          type="text"
+        <textarea
+          ref={textareaRef}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder={t.typeAnswer}
           disabled={loading || showViewResults}
+          rows={1}
         />
         <button type="submit" disabled={loading || !inputValue.trim() || showViewResults}>
           {t.send}

@@ -1,46 +1,96 @@
+/* 默认暗色主题 */
 .App {
   text-align: center;
 }
 
+/* 暗色主题变量 */
+.App[data-theme="dark"] {
+  --bg-color: #282c34;
+  --header-bg-color: #282c34;
+  --text-color: white;
+  --input-bg-color: #282c34;
+  --input-text-color: white;
+  --button-text-color: #282c34;
+  --border-color: #61dafb;
+  --message-user-bg: #61dafb;
+  --message-agent-bg: #4a4a4a;
+  --message-user-text: #282c34; /* 深色文字 */
+  --message-agent-text: #ffffff; /* 白色文字 */
+  --chat-header-bg: #1a1c22;
+  --chat-messages-bg: #282c34;
+  --chat-input-bg: #1a1c22;
+  --results-bg: #282c34;
+  --results-header-bg: #1a1c22;
+  --feedback-bg: #1a1c22;
+}
+
+/* 亮色主题变量 */
+.App[data-theme="light"] {
+  --bg-color: #f5f5f5; /* 浅灰色背景 */
+  --header-bg-color: #f5f5f5;
+  --text-color: #333333;
+  --input-bg-color: #ffffff;
+  --input-text-color: #333333;
+  --button-text-color: #ffffff;
+  --border-color: #2a6b8d;
+  --message-user-bg: #ffffff; /* 白色 */
+  --message-agent-bg: #ffffff; /* 白色 */
+  --message-user-text: #333333; /* 深色文字 */
+  --message-agent-text: #333333; /* 深色文字 */
+  --chat-header-bg: #ffffff; /* 白色 */
+  --chat-messages-bg: #f0f0f0; /* 浅灰色 */
+  --chat-input-bg: #ffffff; /* 白色 */
+  --results-bg: #ffffff;
+  --results-header-bg: #ffffff;
+  --feedback-bg: #f5f5f5;
+}
+
 .App-header {
-  background-color: #282c34;
+  background-color: var(--header-bg-color);
   padding: 20px;
-  color: white;
+  color: var(--text-color);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+  font-size: calc(8px + 2vmin);
   position: relative;
 }
 
 .App-header h1 {
   margin: 0;
-  font-size: 3rem;
+  font-size: 2.5rem;
   margin-bottom: 2rem;
+  color: var(--text-color);
 }
 
 .App-header p {
-  font-size: 1.5rem;
-  color: #61dafb;
+  font-size: 1.2rem;
+  color: var(--border-color);
 }
 
-.language-switch {
+.controls {
+  display: flex;
+  gap: 10px;
   position: absolute;
   top: 20px;
   right: 20px;
-  background-color: #61dafb;
-  color: #282c34;
+}
+
+.language-switch, .theme-switch, .back-button {
+  background-color: var(--border-color);
+  color: var(--button-text-color);
   padding: 5px 10px;
   border-radius: 5px;
   cursor: pointer;
   font-weight: bold;
   user-select: none;
+  font-size: 0.9rem;
 }
 
-.language-switch:hover {
-  background-color: #21a9c7;
+.language-switch:hover, .theme-switch:hover, .back-button:hover {
+  opacity: 0.8;
 }
 
 .upload-container {
@@ -49,35 +99,47 @@
   align-items: center;
   gap: 1rem;
   padding: 2rem;
-  border: 2px dashed #61dafb;
+  border: 2px dashed var(--border-color);
   border-radius: 10px;
   background-color: rgba(97, 218, 251, 0.1);
   max-width: 500px;
 }
 
 .upload-container input[type="file"] {
-  padding: 10px;
-  border: 1px solid #61dafb;
-  border-radius: 5px;
-  background-color: #282c34;
-  color: white;
+  padding: 15px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--input-bg-color);
+  color: var(--input-text-color);
   width: 100%;
+  font-size: 1.1rem;
+}
+
+.upload-container input[type="file"]::-webkit-file-upload-button {
+  background-color: var(--border-color);
+  color: var(--button-text-color);
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 .upload-container button {
-  padding: 10px 20px;
-  background-color: #61dafb;
-  color: #282c34;
+  padding: 12px 25px;
+  background-color: var(--border-color);
+  color: var(--button-text-color);
   border: none;
-  border-radius: 5px;
-  font-size: 1rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s;
+  margin-top: 10px;
 }
 
 .upload-container button:hover:not(:disabled) {
-  background-color: #21a9c7;
+  opacity: 0.9;
 }
 
 .upload-container button:disabled {
@@ -89,12 +151,15 @@
   margin-bottom: 15px;
   text-align: left;
   display: inline-block;
+  font-size: 1rem;
+  color: var(--text-color);
 }
 
 .adaptive-questioning label {
   display: flex;
   align-items: center;
   cursor: pointer;
+  color: var(--text-color);
 }
 
 .adaptive-questioning input {
@@ -105,6 +170,7 @@
 .error {
   color: #ff6b6b;
   font-weight: bold;
+  font-size: 1rem;
 }
 
 /* Chat styles */
@@ -112,22 +178,23 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #282c34;
-  color: white;
+  background-color: var(--bg-color);
+  color: var(--text-color);
 }
 
 .chat-header {
-  background-color: #1a1c22;
-  color: white;
+  background-color: var(--chat-header-bg);
+  color: var(--text-color);
   padding: 20px;
   text-align: center;
   position: relative;
-  border-bottom: 1px solid #61dafb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .chat-header h1 {
   margin: 0;
   font-size: 2rem;
+  color: var(--text-color);
 }
 
 .chat-messages {
@@ -137,6 +204,7 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
+  background-color: var(--chat-messages-bg); /* 添加背景色 */
 }
 
 .message {
@@ -161,15 +229,17 @@
 }
 
 .message.user .message-content {
-  background-color: #61dafb;
-  color: #282c34;
+  background-color: var(--message-user-bg);
+  color: var(--message-user-text);
   border-bottom-right-radius: 0;
+  border: 1px solid var(--border-color);
 }
 
 .message.agent .message-content {
-  background-color: #4a4a4a;
-  color: white;
+  background-color: var(--message-agent-bg);
+  color: var(--message-agent-text);
   border-bottom-left-radius: 0;
+  border: 1px solid var(--border-color);
 }
 
 .message-text {
@@ -186,35 +256,50 @@
 .chat-input {
   display: flex;
   padding: 20px;
-  background-color: #1a1c22;
-  border-top: 1px solid #61dafb;
+  background-color: var(--chat-input-bg);
+  border-top: 1px solid var(--border-color);
 }
 
-.chat-input input {
+.chat-input textarea {
   flex: 1;
   padding: 12px;
   border: none;
   border-radius: 20px;
   margin-right: 10px;
   font-size: 16px;
-  background-color: #282c34;
-  color: white;
+  background-color: var(--input-bg-color);
+  color: var(--input-text-color);
+  resize: none; /* 禁止用户手动调整大小 */
+  min-height: 40px; /* 最小高度 */
+  max-height: 120px; /* 最大高度 */
+  overflow-y: auto; /* 超出时显示滚动条 */
+  box-sizing: border-box;
+  font-family: inherit; /* 使用与页面相同的字体 */
+  line-height: 1.5; /* 设置行高以提高可读性 */
+  word-wrap: break-word; /* 允许长单词换行 */
+  word-break: break-word; /* 在适当的位置换行 */
+}
+
+.chat-input textarea:focus {
+  outline: 2px solid var(--border-color); /* 聚焦时显示边框 */
 }
 
 .chat-input button {
-  background-color: #61dafb;
+  background-color: var(--border-color);
   border: none;
-  color: #282c34;
+  color: var(--button-text-color);
   padding: 10px 20px;
   border-radius: 20px;
   font-size: 1rem;
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s;
+  align-self: flex-end; /* 将按钮对齐到底部 */
+  height: 40px; /* 固定按钮高度 */
 }
 
 .chat-input button:hover:not(:disabled) {
-  background-color: #21a9c7;
+  opacity: 0.9;
 }
 
 .chat-input button:disabled {
@@ -223,9 +308,9 @@
 }
 
 .view-results-button {
-  background-color: #61dafb;
+  background-color: var(--border-color);
   border: none;
-  color: #282c34;
+  color: var(--button-text-color);
   padding: 12px 24px;
   border-radius: 20px;
   cursor: pointer;
@@ -236,24 +321,24 @@
 }
 
 .view-results-button:hover {
-  background-color: #21a9c7;
+  opacity: 0.9;
 }
 
 .results-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #282c34;
-  color: white;
+  background-color: var(--results-bg);
+  color: var(--text-color);
 }
 
 .results-header {
-  background-color: #1a1c22;
-  color: white;
+  background-color: var(--results-header-bg);
+  color: var(--text-color);
   padding: 20px;
   text-align: center;
   position: relative;
-  border-bottom: 1px solid #61dafb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .results-content {
@@ -272,12 +357,13 @@
 
 .score-section h2 {
   margin-bottom: 20px;
+  color: var(--text-color);
 }
 
 .score {
   font-size: 72px;
   font-weight: bold;
-  color: #61dafb;
+  color: var(--border-color);
   text-align: center;
 }
 
@@ -289,12 +375,14 @@
 .feedback-section h2 {
   margin-bottom: 20px;
   text-align: center;
+  color: var(--text-color);
 }
 
 .feedback {
-  background-color: #1a1c22;
+  background-color: var(--feedback-bg);
   padding: 20px;
   border-radius: 10px;
   white-space: pre-wrap;
   text-align: left;
+  color: var(--text-color);
 }

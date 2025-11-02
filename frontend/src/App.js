@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import { getTranslations } from './i18n';
 import Chat from './Chat';
@@ -15,8 +15,27 @@ function App() {
   const [error, setError] = useState('');
   const [language, setLanguage] = useState('zh');
   const [adaptiveQuestioning, setAdaptiveQuestioning] = useState(true);
+  const [theme, setTheme] = useState('dark'); // 'light' or 'dark'
 
   const t = getTranslations(language);
+
+  useEffect(() => {
+    const handleLanguageChange = (event) => {
+      setLanguage(event.detail);
+    };
+
+    const handleThemeChange = (event) => {
+      setTheme(event.detail);
+    };
+
+    window.addEventListener('languageChange', handleLanguageChange);
+    window.addEventListener('themeChange', handleThemeChange);
+
+    return () => {
+      window.removeEventListener('languageChange', handleLanguageChange);
+      window.removeEventListener('themeChange', handleThemeChange);
+    };
+  }, []);
 
   /** 
    * @param {React.ChangeEvent<HTMLInputElement>} event 
@@ -74,6 +93,10 @@ function App() {
     setLanguage(prevLang => prevLang === 'zh' ? 'en' : 'zh');
   };
 
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
+  };
+
   const handleBackToUpload = () => {
     setCurrentPage('upload');
     setSessionId('');
@@ -88,17 +111,22 @@ function App() {
   };
 
   return (
-    <div className="App">
+    <div className="App" data-theme={theme}>
       {currentPage === 'upload' ? (
         <header className="App-header">
-          <div className="language-switch" onClick={toggleLanguage}>
-            {language === 'zh' ? 'EN' : '中文'}
+          <div className="controls">
+            <div className="language-switch" onClick={toggleLanguage}>
+              {language === 'zh' ? 'EN' : '中文'}
+            </div>
+            <div className="theme-switch" onClick={toggleTheme}>
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </div>
           </div>
           <h1>{t.interviewAssistant}</h1>
           <div className="upload-container">
             <input
               type="file"
-              accept=".pdf,.doc,.docx,.txt"
+              accept=".pdf,.doc,.docx,.txt,.md"
               onChange={handleFileChange}
               disabled={uploading}
             />

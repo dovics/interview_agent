@@ -2,6 +2,8 @@
 
 An AI-powered technical interview agent that conducts interviews based on candidate resumes.
 
+![chat](assets/chat.png)
+![result](assets/result.png)
 ## Features
 
 - Accepts resumes in PDF, DOCX, or Markdown format

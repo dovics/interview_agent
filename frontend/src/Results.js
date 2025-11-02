@@ -12,6 +12,20 @@ function Results({ sessionId, language, onBack }) {
 
   const t = getTranslations(language);
 
+  const toggleLanguage = () => {
+    const newLanguage = language === 'zh' ? 'en' : 'zh';
+    // We need to pass this back to the parent component to update the global state
+    window.dispatchEvent(new CustomEvent('languageChange', { detail: newLanguage }));
+  };
+
+  const toggleTheme = () => {
+    const currentTheme = document.querySelector('.App').getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.querySelector('.App').setAttribute('data-theme', newTheme);
+    // We need to pass this back to the parent component to update the global state
+    window.dispatchEvent(new CustomEvent('themeChange', { detail: newTheme }));
+  };
+
   useEffect(() => {
     const fetchResults = async () => {
       try {
@@ -40,8 +54,16 @@ function Results({ sessionId, language, onBack }) {
     return (
       <div className="results-container">
         <header className="results-header">
-          <div className="language-switch" onClick={onBack}>
-            {t.back}
+          <div className="controls">
+            <div className="language-switch" onClick={toggleLanguage}>
+              {language === 'zh' ? 'EN' : '中文'}
+            </div>
+            <div className="theme-switch" onClick={toggleTheme}>
+              {document.querySelector('.App')?.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'}
+            </div>
+            <div className="back-button" onClick={onBack}>
+              {t.back}
+            </div>
           </div>
           <h1>{t.interviewAssistant}</h1>
         </header>
@@ -56,8 +78,16 @@ function Results({ sessionId, language, onBack }) {
     return (
       <div className="results-container">
         <header className="results-header">
-          <div className="language-switch" onClick={onBack}>
-            {t.back}
+          <div className="controls">
+            <div className="language-switch" onClick={toggleLanguage}>
+              {language === 'zh' ? 'EN' : '中文'}
+            </div>
+            <div className="theme-switch" onClick={toggleTheme}>
+              {document.querySelector('.App')?.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'}
+            </div>
+            <div className="back-button" onClick={onBack}>
+              {t.back}
+            </div>
           </div>
           <h1>{t.interviewAssistant}</h1>
         </header>
@@ -71,8 +101,16 @@ function Results({ sessionId, language, onBack }) {
   return (
     <div className="results-container">
       <header className="results-header">
-        <div className="language-switch" onClick={onBack}>
-          {t.back}
+        <div className="controls">
+          <div className="language-switch" onClick={toggleLanguage}>
+            {language === 'zh' ? 'EN' : '中文'}
+          </div>
+          <div className="theme-switch" onClick={toggleTheme}>
+            {document.querySelector('.App')?.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'}
+          </div>
+          <div className="back-button" onClick={onBack}>
+            {t.back}
+          </div>
         </div>
         <h1>{t.interviewAssistant}</h1>
       </header>
