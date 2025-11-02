@@ -12,3 +12,4 @@ wheels/
 __marimo__
 
 .env
+node_modules

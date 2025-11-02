@@ -66,7 +66,7 @@ class InterviewResult(BaseModel):
     final_score: Optional[float]
     final_feedback: Optional[str]
     status: str
-    interview_questions: Optional[List[str]]= None
+    interview_questions: Optional[List[str]] = None
     answers: Optional[List[str]] = None
     response_analysis: Optional[List[str]] = None
 
@@ -112,7 +112,7 @@ async def start_interview(file: UploadFile, adaptive_questioning: bool = True):
     """
     # Generate a session ID
     session_id = str(uuid.uuid4())
-
+    print("-------------", adaptive_questioning)
     try:
         # Save uploaded file temporarily
         file_extension = Path(file.filename).suffix if file.filename else ".tmp"
@@ -194,11 +194,15 @@ async def get_next_question(session_id: str, answer: AnswerRequest = None):
         # Get current state
         state = interview_sessions[session_id]
         app_graph = interview_graphs[session_id]
-        if answer:
-            new_state = app_graph.invoke(
-                Command(resume=answer.answer),
-                config={"recursion_limit": 100, "thread_id": session_id},
-            )
+        is_interrupted = state.get("__interrupt__", None) != None
+        if is_interrupted:
+            if answer is not None and answer.answer != "":
+                new_state = app_graph.invoke(
+                    Command(resume=answer.answer),
+                    config={"recursion_limit": 100, "thread_id": session_id},
+                )
+            else:
+                new_state = state
         else:
             # Run the graph to get the next question
             new_state = app_graph.invoke(
@@ -214,7 +218,7 @@ async def get_next_question(session_id: str, answer: AnswerRequest = None):
                 session_id=session_id,
                 question="Interview completed. Thank you!",
                 question_type="main",
-                progress={"status": "completed"},
+                progress={"stage": "completed"},
             )
 
         # Extract question based on current stage
@@ -245,11 +249,6 @@ async def get_next_question(session_id: str, answer: AnswerRequest = None):
                     # Main question
                     question = current_question["question"]
                     question_type = "main"
-
-        elif new_state["interview_stage"] == "coding":
-            if new_state["coding_challenge"]:
-                question = f"Coding Challenge: {new_state['coding_challenge']['title']}\n{new_state['coding_challenge']['description']}"
-                question_type = "coding"
 
         return QuestionResponse(
             session_id=session_id,
@@ -305,7 +304,7 @@ async def get_interview_result(session_id: str):
             if "follow_up_questions" in question:
                 interview_questions.extend(question["follow_up_questions"])
             if "answers" in question:
-                answers.append(question["answers"])
+                answers.extend(question["answers"])
 
         return InterviewResult(
             final_score=state.get("final_score"),
