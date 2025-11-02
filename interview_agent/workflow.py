@@ -63,16 +63,7 @@ def create_interview_graph() -> StateGraph:
     )
     
     workflow.add_edge("generate_adaptive_questions", "ask_question")
-    
-    workflow.add_conditional_edges(
-        "next_question",
-        route_question,
-        {
-            "next_question_set": "ask_question",
-            "adaptive_questioning": "analyze_response_quality",
-            "evaluation": "evaluate_responses",
-        }
-    )
+    workflow.add_edge("next_question", "ask_question")
     
     workflow.add_edge("evaluate_responses", END)
     

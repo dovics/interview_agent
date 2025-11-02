@@ -269,7 +269,7 @@ def generate_adaptive_questions_node(state: InterviewState) -> Dict[str, Any]:
     questions = state.get("interview_questions", [])
     current_index = state.get("current_question_index", 0)
     follow_up_index = state.get("current_follow_up_index", -1)
-    
+
     if not questions or current_index >= len(questions):
         output = {}
         log_node_execution("generate_adaptive_questions_node", state, output)
@@ -347,22 +347,22 @@ def generate_adaptive_questions_node(state: InterviewState) -> Dict[str, Any]:
     # Insert the adaptive question into follow-up questions
     updated_questions = list(questions)
     current_q_set_copy = dict(updated_questions[current_index])
-    
+
     # Initialize follow_up_questions list if it doesn't exist
     if "follow_up_questions" not in current_q_set_copy:
         current_q_set_copy["follow_up_questions"] = []
-    
+
     # Add adaptive question to follow-up questions
     current_q_set_copy["follow_up_questions"].append(adaptive_question)
-    
+
     # Update the questions in the state
     updated_questions[current_index] = current_q_set_copy
-    
+
     output = {
         "interview_questions": updated_questions,
-        "current_follow_up_index": len(current_q_set_copy["follow_up_questions"]) - 1
+        "current_follow_up_index": len(current_q_set_copy["follow_up_questions"]) - 1,
     }
-    
+
     log_node_execution("generate_adaptive_questions_node", state, output)
     return output
 
@@ -371,16 +371,17 @@ def analyze_response_quality_node(state: InterviewState) -> Dict[str, Any]:
     """Node for analyzing response quality and deciding whether to ask follow-up questions"""
     # 记录节点执行开始
     log_node_execution("analyze_response_quality_node", state, {})
-    if not state.get("enable_adaptive_questioning", False):
+    enable_adaptive_questioning = state.get("enable_adaptive_questioning", False) 
+    if not enable_adaptive_questioning:
         output = {}
         log_node_execution("analyze_response_quality_node", state, output)
         return output
-    
+
     model = init_chat_model("deepseek-chat", temperature=0)
 
     questions = state.get("interview_questions", [])
     current_index = state.get("current_question_index", 0)
-    
+
     if not questions or current_index >= len(questions):
         output = {}
         log_node_execution("analyze_response_quality_node", state, output)
@@ -459,23 +460,25 @@ def analyze_response_quality_node(state: InterviewState) -> Dict[str, Any]:
         # Store the analysis in the state
         updated_questions = list(questions)
         current_q_set_copy = dict(updated_questions[current_index])
-        
+
         # Initialize response_analysis list if it doesn't exist
         if "response_analysis" not in current_q_set_copy:
             current_q_set_copy["response_analysis"] = []
-        
+
         # Add analysis to the set
-        current_q_set_copy["response_analysis"].append({
-            "answer": latest_answer,
-            "should_ask_follow_up": should_ask_follow_up,
-            "reasoning": reasoning
-        })
-        
+        current_q_set_copy["response_analysis"].append(
+            {
+                "answer": latest_answer,
+                "should_ask_follow_up": should_ask_follow_up,
+                "reasoning": reasoning,
+            }
+        )
+
         updated_questions[current_index] = current_q_set_copy
 
         output = {
             "interview_questions": updated_questions,
-            "should_ask_follow_up": should_ask_follow_up
+            "should_ask_follow_up": should_ask_follow_up,
         }
 
     except Exception as e:
@@ -548,17 +551,19 @@ def generate_coding_challenge_node(state: InterviewState) -> Dict[str, Any]:
         challenge = parser.parse(response.content)
     except Exception as e:
         raise ValueError(f"Failed to generate coding challenge: {str(e)}")
-    
+
     # Instead of asking the question directly, prepare it to be asked by another node
     # Store the challenge information in the state for the question asking node to use
-    
+
     questions = state.get("interview_questions", [])
-    questions.append({
-        "topic": "coding",
-        "question": challenge.get("title", "")
-                + "\n"
-                + challenge.get("description", ""),
-    })
+    questions.append(
+        {
+            "topic": "coding",
+            "question": challenge.get("title", "")
+            + "\n"
+            + challenge.get("description", ""),
+        }
+    )
 
     output = {
         "interview_questions": questions,
@@ -567,6 +572,7 @@ def generate_coding_challenge_node(state: InterviewState) -> Dict[str, Any]:
     # 记录节点执行结束
     log_node_execution("generate_coding_challenge_node", state, output)
     return output
+
 
 def evaluate_responses_node(state: InterviewState) -> Dict[str, Any]:
     """Node for evaluating candidate responses"""
@@ -581,8 +587,6 @@ def evaluate_responses_node(state: InterviewState) -> Dict[str, Any]:
         "projects": state.get("projects", []),
         "technical_points": state.get("technical_points", []),
         "interview_questions": state.get("interview_questions", []),
-        "coding_challenge": state.get("coding_challenge", {}),
-        "coding_solution": state.get("coding_solution", ""),
     }
 
     prompt = f"""

@@ -66,6 +66,9 @@ class InterviewResult(BaseModel):
     final_score: Optional[float]
     final_feedback: Optional[str]
     status: str
+    interview_questions: Optional[List[str]]= None
+    answers: Optional[List[str]] = None
+    response_analysis: Optional[List[str]] = None
 
 
 # Global storage for interview sessions (in production, use Redis or a database)
@@ -285,7 +288,24 @@ async def get_interview_result(session_id: str):
                 final_score=None,
                 final_feedback=None,
                 status="in_progress",
+                interview_questions=None,
+                response_analysis=None,
             )
+
+        questions = state.get("interview_questions", [])
+        # Extract interview questions and response analysis
+        interview_questions = []
+        response_analysis = []
+        answers = []
+        # Collect response analysis from each question
+        for question in questions:
+            if "response_analysis" in question:
+                response_analysis.extend(question["response_analysis"])
+            interview_questions.append(question["question"])
+            if "follow_up_questions" in question:
+                interview_questions.extend(question["follow_up_questions"])
+            if "answers" in question:
+                answers.append(question["answers"])
 
         return InterviewResult(
             final_score=state.get("final_score"),
@@ -295,6 +315,9 @@ async def get_interview_result(session_id: str):
                 if state["interview_stage"] == "completed"
                 else "in_progress"
             ),
+            interview_questions=interview_questions,
+            answers=answers,
+            response_analysis=response_analysis,
         )
 
     except Exception as e:

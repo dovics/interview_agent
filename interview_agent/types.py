@@ -61,8 +61,7 @@ class InterviewState(TypedDict):
     current_question_index: int
     should_ask_follow_up: bool
     current_follow_up_index: int
-    coding_challenge: Optional[Dict[str, Any]]
-    coding_solution: Optional[str]
+
     evaluation: Optional[Dict[str, Any]]
     final_score: Optional[int]
     final_feedback: Optional[str]

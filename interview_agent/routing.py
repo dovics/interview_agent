@@ -12,7 +12,7 @@ def route_question(state: InterviewState) -> str:
     current_index = state.get("current_question_index", 0)
     questions = state.get("interview_questions", [])
     stage = state.get("interview_stage", "")
-    enable_adaptive_questioning = state.get("enable_adaptive_questioning", True)  # 获取参数
+    enable_adaptive_questioning = state.get("enable_adaptive_questioning", False) 
     
     # If we're not in questioning stage, route accordingly
     if stage != "questioning":
