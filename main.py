@@ -24,11 +24,13 @@ Examples:
   python main.py example_resume.md
   python main.py /path/to/resume.pdf
   python main.py resume.docx --output results.json
+  python main.py --server --port 8000
         """
     )
     
     parser.add_argument(
         "resume_path",
+        nargs='?',
         help="Path to the resume file (PDF, DOCX, or Markdown)"
     )
     
@@ -54,12 +56,42 @@ Examples:
         action="store_true"
     )
     
+    parser.add_argument(
+        "--server",
+        help="Start HTTP server instead of command line interface",
+        action="store_true"
+    )
+    
+    parser.add_argument(
+        "--host",
+        help="Host to bind the server to",
+        default="127.0.0.1",
+        type=str
+    )
+    
+    parser.add_argument(
+        "--port",
+        help="Port to bind the server to",
+        default=8000,
+        type=int
+    )
+    
     args = parser.parse_args()
     
     # 设置日志级别
     set_log_level(args.log_level)
     
+    # Start HTTP server if requested
+    if args.server:
+        start_server(args.host, args.port)
+        return
+    
     # Validate resume path
+    if not args.resume_path:
+        print("Error: Resume file path is required when not running in server mode.")
+        parser.print_help()
+        sys.exit(1)
+        
     resume_path = Path(args.resume_path)
     if not resume_path.exists():
         print(f"Error: Resume file '{args.resume_path}' does not exist.")
@@ -100,6 +132,22 @@ Examples:
         sys.exit(1)
     except Exception as e:
         print(f"Error running interview: {e}")
+        sys.exit(1)
+
+
+def start_server(host: str, port: int):
+    """Start the HTTP server"""
+    print(f"Starting Interview Agent HTTP server on {host}:{port}")
+    
+    try:
+        import uvicorn
+        from interview_agent.server import app
+        uvicorn.run(app, host=host, port=port)
+    except ImportError as e:
+        print(f"Error: Missing dependencies for HTTP server. Please install with: pip install fastapi uvicorn")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error starting server: {e}")
         sys.exit(1)
 
 

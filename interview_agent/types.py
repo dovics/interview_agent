@@ -66,3 +66,4 @@ class InterviewState(TypedDict):
     final_feedback: Optional[str]
     interview_stage: str  # resume_upload, resume_analysis, questioning, coding, evaluation, completed
     enable_adaptive_questioning: bool  # 控制是否启用自适应提问
+    mode: str  # 运行模式: "server" or "cli"

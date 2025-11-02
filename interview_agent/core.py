@@ -39,7 +39,8 @@ def run_interview(resume_content: str, enable_adaptive_questioning: bool = True)
         "final_score": None,
         "final_feedback": None,
         "interview_stage": "resume_analysis",
-        "enable_adaptive_questioning": enable_adaptive_questioning
+        "enable_adaptive_questioning": enable_adaptive_questioning,
+        "mode": "cli"
     }
     
     # Run the interview with increased recursion limit
