@@ -3,7 +3,7 @@ name = "interview-agent"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 dependencies = [
     "langchain>=0.3.27",
     "langchain-deepseek>=0.1.4",
@@ -14,6 +14,8 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn>=0.30.0",
     "python-multipart>=0.0.20",
+    "langgraph-checkpoint-postgres>=3.0.0",
+    "psycopg[binary]>=3.2.12",
 ]
 
 [dependency-groups]

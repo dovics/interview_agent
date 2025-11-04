@@ -73,9 +73,40 @@ class InterviewResult(BaseModel):
     response_analysis: Optional[List[str]] = None
 
 
+class Server:
+    """Server class to manage interview sessions and graphs"""
+    
+    def __init__(self):
+        """Initialize the server with empty session and graph storage"""
+        self.interview_sessions: Dict[str, Dict[str, Any]] = {}
+        self.interview_graphs: Dict[str, Any] = {}
+        
+    def create_app_graph(self, session_id: str):
+        """Create and store an app graph for a session"""
+        graph = create_interview_graph()
+        app_graph = graph.compile(
+            checkpointer=InMemorySaver(serde=JsonPlusSerializer(pickle_fallback=True)),
+            interrupt_before=None,
+            interrupt_after=None,
+        )
+        self.interview_graphs[session_id] = app_graph
+        return app_graph
+        
+    def get_app_graph(self, session_id: str):
+        """Retrieve an app graph for a session"""
+        return self.interview_graphs.get(session_id)
+        
+    def remove_session(self, session_id: str):
+        """Remove a session and its associated graph"""
+        if session_id in self.interview_sessions:
+            del self.interview_sessions[session_id]
+            
+        if session_id in self.interview_graphs:
+            del self.interview_graphs[session_id]
+
+
 # Global storage for interview sessions (in production, use Redis or a database)
-interview_sessions: Dict[str, Dict[str, Any]] = {}
-interview_graphs: Dict[str, Any] = {}  # Store compiled graphs
+server = Server()
 
 # Create FastAPI app
 app = FastAPI(
@@ -130,15 +161,6 @@ async def start_interview(file: UploadFile, adaptive_questioning: bool = True):
         # Parse resume
         resume_content = parse_resume(temp_file_path)
 
-        # Create interview graph
-        graph = create_interview_graph()
-        app_graph = graph.compile(
-            checkpointer=InMemorySaver(serde=JsonPlusSerializer(pickle_fallback=True)),
-            interrupt_before=None,
-            interrupt_after=None,
-        )
-        interview_graphs[session_id] = app_graph
-
         # Initial state
         initial_state: InterviewState = {
             "messages": [{"file_path": temp_file_path}],
@@ -159,7 +181,7 @@ async def start_interview(file: UploadFile, adaptive_questioning: bool = True):
         }
 
         # Store session
-        interview_sessions[session_id] = initial_state
+        server.interview_sessions[session_id] = initial_state
 
         # Clean up temporary file
         os.remove(temp_file_path)
@@ -189,16 +211,16 @@ async def get_next_question(session_id: str, answer: AnswerRequest = None):
     Returns:
         The next question in the interview
     """
-    if session_id not in interview_sessions:
+    if session_id not in server.interview_sessions:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    if session_id not in interview_graphs:
+    if not server.get_app_graph(session_id):
         raise HTTPException(status_code=500, detail="Interview graph not found")
 
     try:
         # Get current state
-        state = interview_sessions[session_id]
-        app_graph = interview_graphs[session_id]
+        state = server.interview_sessions[session_id]
+        app_graph = server.get_app_graph(session_id)
         is_interrupted = state.get("__interrupt__", None) != None
         if is_interrupted:
             if answer is not None and answer.answer != "":
@@ -215,7 +237,7 @@ async def get_next_question(session_id: str, answer: AnswerRequest = None):
             )
 
         # Update session state
-        interview_sessions[session_id] = new_state
+        server.interview_sessions[session_id] = new_state
 
         # Check if interview is completed
         if new_state["interview_stage"] == "completed":
@@ -279,15 +301,15 @@ async def get_interview_result(session_id: str):
     Returns:
         Final interview results
     """
-    if session_id not in interview_sessions:
+    if session_id not in server.interview_sessions:
         raise HTTPException(status_code=404, detail="Session not found")
 
     try:
         # Get final state
-        state = interview_sessions[session_id]
+        state = server.interview_sessions[session_id]
 
         # If interview is not completed yet, run it to completion
-        if state["interview_stage"] != "completed" and session_id in interview_graphs:
+        if state["interview_stage"] != "completed" and server.get_app_graph(session_id):
             return InterviewResult(
                 final_score=None,
                 final_feedback=None,
@@ -338,11 +360,7 @@ async def end_interview(session_id: str):
     Args:
         session_id: The session ID for the interview
     """
-    if session_id in interview_sessions:
-        del interview_sessions[session_id]
-
-    if session_id in interview_graphs:
-        del interview_graphs[session_id]
+    server.remove_session(session_id)
 
     return {"message": "Interview session ended successfully"}
 
