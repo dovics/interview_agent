@@ -2,17 +2,20 @@ import React, { useState } from 'react';
 import StartPage from './pages/StartPage';
 import ConfigPage from './pages/ConfigPage';
 import PreparePage from './pages/PreparePage';
+import InterviewPage from './pages/InterviewPage';
 import './App.css';
 
 function App() {
   const [showConfig, setShowConfig] = useState(false);
-  const [currentPage, setCurrentPage] = useState('start'); // 'start', 'prepare'
+  const [currentPage, setCurrentPage] = useState('start'); // 'start', 'prepare', 'interview'
   const [interviewMode, setInterviewMode] = useState(''); // 'real' or 'practice'
   const [config, setConfig] = useState({
     questionCount: 3,
     thinkingTime: 300, // 5 minutes in seconds
     answeringTime: 600 // 10 minutes in seconds
   });
+  const [draftNotes, setDraftNotes] = useState('');
+  const [questions, setQuestions] = useState([]);
 
   const toggleConfig = () => {
     setShowConfig(!showConfig);
@@ -37,9 +40,16 @@ function App() {
     setCurrentPage('start');
   };
 
-  const handleStartInterview = () => {
-    // TODO: 实现开始答题的功能
-    alert('开始答题功能待实现');
+  const handleStartInterview = (notes, generatedQuestions) => {
+    setDraftNotes(notes);
+    setQuestions(generatedQuestions);
+    setCurrentPage('interview');
+  };
+
+  const handleFinishInterview = () => {
+    // TODO: 实现完成面试的逻辑
+    alert('面试已完成，录音已上传');
+    setCurrentPage('start');
   };
 
   return (
@@ -77,6 +87,17 @@ function App() {
           config={config} 
           onBack={handleBackToStart} 
           onStartInterview={handleStartInterview}
+        />
+      )}
+
+      {currentPage === 'interview' && (
+        <InterviewPage
+          mode={interviewMode}
+          config={config}
+          draftNotes={draftNotes}
+          questions={questions}
+          onBack={handleBackToStart}
+          onFinishInterview={handleFinishInterview}
         />
       )}
     </div>

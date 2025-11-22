@@ -53,11 +53,7 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
           if (flashTimeoutRef.current) {
             clearTimeout(flashTimeoutRef.current);
           }
-          if (onStartInterview) {
-            onStartInterview();
-          } else {
-            alert('开始答题功能待实现');
-          }
+          handleStartInterview();
           return 0;
         }
 
@@ -73,7 +69,7 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
         clearTimeout(flashTimeoutRef.current);
       }
     };
-  }, [loading, isWarning, onStartInterview]);
+  }, [loading, isWarning]);
 
   const startFlashing = () => {
     // Flash 3 times (6 transitions: on/off/on/off/on/off)
@@ -95,6 +91,12 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleStartInterview = () => {
+    if (onStartInterview) {
+      onStartInterview(draftNotes, questions);
+    }
   };
 
   if (loading) {
@@ -177,7 +179,7 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
 
         <div className="flex justify-center">
           <button
-            onClick={() => onStartInterview ? onStartInterview() : alert('开始答题功能待实现')}
+            onClick={handleStartInterview}
             className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
           >
             开始答题
