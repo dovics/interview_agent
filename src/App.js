@@ -1,19 +1,45 @@
 import React, { useState } from 'react';
 import StartPage from './pages/StartPage';
 import ConfigPage from './pages/ConfigPage';
+import PreparePage from './pages/PreparePage';
 import './App.css';
 
 function App() {
   const [showConfig, setShowConfig] = useState(false);
+  const [currentPage, setCurrentPage] = useState('start'); // 'start', 'prepare'
+  const [interviewMode, setInterviewMode] = useState(''); // 'real' or 'practice'
+  const [config, setConfig] = useState({
+    questionCount: 3,
+    thinkingTime: 300, // 5 minutes in seconds
+    answeringTime: 600 // 10 minutes in seconds
+  });
 
   const toggleConfig = () => {
     setShowConfig(!showConfig);
   };
 
-  const saveConfig = (config) => {
-    // In a real app, you would save these settings to localStorage or a backend
-    console.log('Interview Config:', config.interviewConfig);
-    console.log('Model Config:', config.modelConfig);
+  const saveConfig = (newConfig) => {
+    // Save the interview configuration
+    setConfig({
+      ...config,
+      ...newConfig.interviewConfig
+    });
+    console.log('Interview Config:', newConfig.interviewConfig);
+    console.log('Model Config:', newConfig.modelConfig);
+  };
+
+  const startInterview = (mode) => {
+    setInterviewMode(mode);
+    setCurrentPage('prepare');
+  };
+
+  const handleBackToStart = () => {
+    setCurrentPage('start');
+  };
+
+  const handleStartInterview = () => {
+    // TODO: 实现开始答题的功能
+    alert('开始答题功能待实现');
   };
 
   return (
@@ -41,7 +67,18 @@ function App() {
       )}
 
       {/* Main Content */}
-      <StartPage />
+      {currentPage === 'start' && (
+        <StartPage onStartInterview={startInterview} />
+      )}
+      
+      {currentPage === 'prepare' && (
+        <PreparePage 
+          mode={interviewMode} 
+          config={config} 
+          onBack={handleBackToStart} 
+          onStartInterview={handleStartInterview}
+        />
+      )}
     </div>
   );
 }

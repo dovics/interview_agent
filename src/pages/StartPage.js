@@ -1,6 +1,6 @@
 import React from 'react';
 
-const StartPage = () => {
+const StartPage = ({ onStartInterview }) => {
   return (
     <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 py-8 px-6 text-center">
@@ -12,6 +12,7 @@ const StartPage = () => {
         <div className="space-y-6">
           <div className="group relative">
             <button 
+              onClick={() => onStartInterview('real')}
               className="w-full bg-white border-2 border-blue-500 rounded-xl py-5 px-6 text-left hover:bg-blue-50 transition-all duration-300 shadow-sm hover:shadow-md"
             >
               <div className="flex justify-between items-center">
@@ -34,6 +35,7 @@ const StartPage = () => {
           
           <div className="group relative">
             <button 
+              onClick={() => onStartInterview('practice')}
               className="w-full bg-white border-2 border-green-500 rounded-xl py-5 px-6 text-left hover:bg-green-50 transition-all duration-300 shadow-sm hover:shadow-md"
             >
               <div className="flex justify-between items-center">

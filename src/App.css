@@ -39,6 +39,54 @@ body {
   color: #61dafb;
 }
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+  width: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 5px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 5px;
+}
+
+/* Flash animation for warning */
+@keyframes flash {
+  0%, 100% { background-color: rgba(255, 255, 255, 0); }
+  50% { background-color: rgba(239, 68, 68, 0.3); }
+}
+
+.bg-red-500.bg-opacity-30 {
+  animation: flash 0.5s cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    background-color: rgba(255, 255, 255, 0);
+  }
+  50% {
+    background-color: rgba(239, 68, 68, 0.3);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 0.5s cubic-bezier(0.4, 0, 0.6, 1);
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
