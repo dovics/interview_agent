@@ -2,19 +2,28 @@ import React, { useState, useRef, useEffect } from 'react';
 
 const InterviewPage = ({ mode, config, draftNotes, questions, onBack, onFinishInterview }) => {
   const [recording, setRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [recordedChunks, setRecordedChunks] = useState([]);
+  const [transcript, setTranscript] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
   const [countdown, setCountdown] = useState(config.answeringTime);
   const [isWarning, setIsWarning] = useState(false);
   const [isFlashing, setIsFlashing] = useState(false);
-  const [recordingStopped, setRecordingStopped] = useState(false); // 新增状态，跟踪录音是否已停止
+  const [speechError, setSpeechError] = useState(null);
+  const [micPermissionRequested, setMicPermissionRequested] = useState(false); // New state to track mic permission
+  const recognitionRef = useRef(null);
   const intervalRef = useRef(null);
   const flashTimeoutRef = useRef(null);
 
-  // 自动开始录音
+  // Request microphone permission on component mount
   useEffect(() => {
-    startRecording();
+    requestMicrophonePermission();
   }, []);
+
+  // Auto start speech recognition after mic permission is granted
+  useEffect(() => {
+    if (micPermissionRequested) {
+      startSpeechRecognition();
+    }
+  }, [micPermissionRequested]);
 
   // Countdown effect
   useEffect(() => {
@@ -50,6 +59,40 @@ const InterviewPage = ({ mode, config, draftNotes, questions, onBack, onFinishIn
     };
   }, [isWarning, questions]);
 
+  const requestMicrophonePermission = async () => {
+    try {
+      // First check if mediaDevices API is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('浏览器不支持麦克风访问功能，请使用最新版Chrome、Edge或Firefox浏览器');
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Stop all tracks to release the microphone after getting permission
+      stream.getTracks().forEach(track => track.stop());
+      setMicPermissionRequested(true);
+      setSpeechError(null); // Clear any previous errors
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      
+      let errorMessage = '无法访问麦克风，请检查权限设置';
+      
+      // Handle specific error types
+      if (error.name === 'NotFoundError' || error.name === 'OverconstrainedError') {
+        errorMessage = '未找到可用的麦克风设备，请检查设备连接或系统设置';
+      } else if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage = '麦克风权限被拒绝，请确保已授予麦克风权限并刷新页面重试';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = '麦克风设备正被其他应用占用，请关闭其他应用后重试';
+      } else if (error.name === 'AbortError') {
+        errorMessage = '设备访问被中断，请重试';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setSpeechError(errorMessage);
+    }
+  };
+
   const startFlashing = () => {
     // Flash 3 times (6 transitions: on/off/on/off/on/off)
     let count = 0;
@@ -72,57 +115,115 @@ const InterviewPage = ({ mode, config, draftNotes, questions, onBack, onFinishIn
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const startRecording = async () => {
-    // 如果是全真模式并且已经停止过录音，则不允许重新开始
-    if (mode === 'real' && recordingStopped) {
-      alert('全真模拟模式下，录音已停止，不允许重新开始录音');
+  const startSpeechRecognition = () => {
+    // 如果是全真模式并且已经停止过语音识别，则不允许重新开始
+    if (mode === 'real' && !recognitionRef.current) {
+      setSpeechError('全真模拟模式下，语音识别已停止，不允许重新开始');
       return;
     }
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          setRecordedChunks(prev => [...prev, event.data]);
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      setSpeechError('您的浏览器不支持语音识别功能，请使用Chrome或Edge浏览器');
+      return;
+    }
+    console.log('SpeechRecognition', SpeechRecognition);
+    // 如果已有识别器实例，先清理掉
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'zh-CN';
+
+    recognition.onresult = (event) => {
+      setSpeechError(null); // 清除之前的错误
+      let interim = '';
+      let final = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          final += transcript;
+        } else {
+          interim += transcript;
         }
-      };
-      recorder.start();
-      setMediaRecorder(recorder);
+      }
+
+      if (final) {
+        setTranscript(prev => prev + final);
+      }
+      
+      setInterimTranscript(interim);
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error', event.error);
+      setSpeechError(`语音识别发生错误: ${event.error}`);
+      
+      // 特别处理not-allowed错误
+      if (event.error === 'not-allowed') {
+        setSpeechError('语音识别权限被拒绝，请确保已授予麦克风权限并刷新页面重试');
+      } else if (event.error === 'no-speech') {
+        // Continue listening
+        try {
+          recognition.start();
+        } catch (err) {
+          console.error('Failed to restart recognition', err);
+        }
+      }
+    };
+
+    recognition.onend = () => {
+      if (recording) {
+        // If recording is still active, restart recognition
+        try {
+          recognition.start();
+        } catch (err) {
+          console.error('Failed to restart recognition', err);
+          setSpeechError('语音识别意外停止，请尝试重新开始');
+        }
+      }
+    };
+
+    try {
+      recognition.start();
+      recognitionRef.current = recognition;
       setRecording(true);
+      setSpeechError(null); // 清除之前的错误
     } catch (error) {
-      console.error('Error accessing microphone:', error);
-      alert('无法访问麦克风，请检查权限设置');
+      console.error('Error starting speech recognition:', error);
+      if (error.name === 'NotAllowedError') {
+        setSpeechError('语音识别权限被拒绝，请确保已授予麦克风权限并刷新页面重试');
+      } else {
+        setSpeechError('无法启动语音识别，请检查麦克风权限设置');
+      }
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorder) {
-      mediaRecorder.stop();
-      mediaRecorder.stream.getTracks().forEach(track => track.stop());
+  const stopSpeechRecognition = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
       setRecording(false);
-      setRecordingStopped(true); // 标记录音已停止
     }
   };
 
   const handleFinishInterview = () => {
     if (recording) {
-      stopRecording();
+      stopSpeechRecognition();
     }
     
-    // Create blob from recorded chunks
-    if (recordedChunks.length > 0) {
-      const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-      // In a real app, you would upload the blob to a server here
-      console.log('Recorded audio blob:', blob);
-      // Upload logic would go here
-    }
+    // In a real app, you would upload the transcript to a server here
+    console.log('Interview transcript:', transcript);
+    // Upload logic would go here
     
     if (onFinishInterview) {
-      onFinishInterview();
+      onFinishInterview(transcript);
     }
   };
-
 
   return (
     <div className={`max-w-4xl w-full bg-white rounded-2xl shadow-xl overflow-hidden ${isFlashing ? 'bg-red-500 bg-opacity-30' : ''}`}>
@@ -186,34 +287,38 @@ const InterviewPage = ({ mode, config, draftNotes, questions, onBack, onFinishIn
           </div>
         </div>
 
-        {/* Recording Controls */}
+        {/* Speech Recognition Controls */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">语音回答</h2>
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
             <div className="flex flex-col items-center">
               <div className="flex space-x-4 mb-4">
-                {/* 在全真模式下，如果录音已经停止则不显示开始录音按钮 */}
-                {mode === 'real' && recordingStopped ? (
+                {/* 在全真模式下，如果语音识别已经停止则不显示开始按钮 */}
+                {mode === 'real' && !recognitionRef.current ? (
                   <div className="text-red-600 font-medium">
-                    全真模拟模式下，录音已停止，不允许重新开始录音
+                    全真模拟模式下，语音识别已停止，不允许重新开始
                   </div>
-                ) : !recording ? (
+                ) : !micPermissionRequested && !speechError ? (
+                  <div className="text-blue-600 font-medium">
+                    正在请求麦克风权限...
+                  </div>
+                ) : !recording && !speechError ? (
                   <button
-                    onClick={startRecording}
+                    onClick={startSpeechRecognition}
                     className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center"
                   >
                     <span className="w-3 h-3 bg-white rounded-full mr-2"></span>
-                    开始录音
+                    开始语音识别
                   </button>
-                ) : (
+                ) : recording ? (
                   <button
-                    onClick={stopRecording}
+                    onClick={stopSpeechRecognition}
                     className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium flex items-center"
                   >
                     <span className="w-3 h-3 bg-white mr-2"></span>
-                    停止录音
+                    停止语音识别
                   </button>
-                )}
+                ) : null}
                 
                 {recording && (
                   <div className="flex items-center text-red-600">
@@ -221,22 +326,45 @@ const InterviewPage = ({ mode, config, draftNotes, questions, onBack, onFinishIn
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                     </span>
-                    录音中...
+                    语音识别中...
                   </div>
                 )}
               </div>
               
-              {recordedChunks.length > 0 && !recording && (
-                <div className="mt-2 text-green-600">
-                  已录制 {Math.round(recordedChunks.reduce((acc, chunk) => acc + chunk.size, 0) / 1024)} KB 音频数据
+              {/* 错误信息显示 */}
+              {speechError && (
+                <div className="w-full mb-4 p-3 bg-red-100 border border-red-300 rounded text-red-700">
+                  {speechError}
+                  <div className="mt-2 text-sm">
+                    <p>请尝试以下解决方案:</p>
+                    <ul className="list-disc pl-5 mt-1">
+                      <li>检查麦克风是否正确连接</li>
+                      <li>确认浏览器有麦克风访问权限</li>
+                      <li>检查系统设置中是否禁用了麦克风</li>
+                      <li>尝试刷新页面或重启浏览器</li>
+                    </ul>
+                  </div>
                 </div>
               )}
+              
+              {/* Transcript display */}
+              <div className="w-full mb-4">
+                <div className="bg-white p-4 rounded border border-gray-300 min-h-[100px] max-h-[200px] overflow-y-auto">
+                  <p className="text-gray-800">{transcript}</p>
+                  {interimTranscript && (
+                    <p className="text-gray-500 italic">{interimTranscript}</p>
+                  )}
+                  {!transcript && !interimTranscript && !speechError && (
+                    <p className="text-gray-400">语音识别内容将在此显示...</p>
+                  )}
+                </div>
+              </div>
             </div>
             
             <p className="text-sm text-blue-700 mt-2">
               {mode === 'real' 
-                ? '全真模拟模式：进入页面后自动开始录音，录音停止后不能重新开始' 
-                : '点击"开始录音"按钮开始录制您的回答，回答完毕后点击"停止录音"。'}
+                ? '全真模拟模式：进入页面后自动开始语音识别，停止后不能重新开始' 
+                : '点击"开始语音识别"按钮开始语音识别，回答完毕后点击"停止语音识别"。'}
             </p>
           </div>
         </div>
