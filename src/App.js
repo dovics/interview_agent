@@ -13,7 +13,9 @@ function App() {
   const [config, setConfig] = useState({
     questionCount: 3,
     thinkingTime: 300, // 5 minutes in seconds
-    answeringTime: 600 // 10 minutes in seconds
+    answeringTime: 600, // 10 minutes in seconds
+    difficulty: 'medium', // 题目难度: easy, medium, hard
+    questionLength: 'medium' // 题目长度: short, medium, long
   });
   const [draftNotes, setDraftNotes] = useState('');
   const [questions, setQuestions] = useState([]);

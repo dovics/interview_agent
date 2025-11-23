@@ -47,13 +47,33 @@ const initializeDeepSeekModel = (token) => {
 /**
  * Generate a single interview question using DeepSeek model
  * @param {number} questionCount - The number of questions to generate
- * @returns {Promise<Array>} - Generated questions array
+ * @param {Object} options - Additional options for question generation
+ * @param {string} options.difficulty - Difficulty level (easy, medium, hard)
+ * @param {string} options.questionLength - Length of questions (short, medium, long)
+ * @returns {Promise&lt;Array&gt;} - Generated questions array
  */
-export const generateInterviewQuestions = async (questionCount) => {
+export const generateInterviewQuestions = async (questionCount, options = {}) => {
   try {
     // In a real implementation, we would actually call the model
     const token = getApiToken();
     const model = initializeDeepSeekModel(token);
+    
+    // Extract options with defaults
+    const { difficulty = 'medium', questionLength = 'medium' } = options;
+    
+    // Map difficulty levels to descriptive text
+    const difficultyMap = {
+      easy: '较为简单，适合初学者',
+      medium: '中等难度，有一定挑战性',
+      hard: '较难，需要深入思考和丰富经验'
+    };
+    
+    // Map question length to descriptive text
+    const lengthMap = {
+      short: '简短精练（约20-30字）',
+      medium: '中等长度（约30-50字）',
+      long: '较长详细（约50-80字）'
+    };
     
     const prompt = `# Role
     你是一位中国公务员结构化面试的命题专家，熟悉国考、省考及事业单位面试的题型规律。你擅长设计考察考生综合素质、应变能力和政治素养的高质量面试题。
@@ -61,6 +81,8 @@ export const generateInterviewQuestions = async (questionCount) => {
     # Task
     请根据用户指定的【题型】、【难度】和【数量】，生成相应数量的面试题目。
     用户指定了需要生成 ${questionCount} 道题目。
+    题目难度: ${difficulty} - ${difficultyMap[difficulty]}
+    题目长度: ${questionLength} - ${lengthMap[questionLength]}
 
     # Question Types Definition (题型定义)
     1. **综合分析**: 考察社会现象、政策理解、名言警句等。要求题目具有辩证性，能引发深层思考。
@@ -106,7 +128,7 @@ export const generateInterviewQuestions = async (questionCount) => {
  * Evaluate candidate answers using DeepSeek model with overall scoring
  * @param {Array} questions - Array of questions with their details
  * @param {String} answer - Array of candidate answers
- * @returns {Promise<Object>} - Overall evaluation result
+ * @returns {Promise&lt;Object&gt;} - Overall evaluation result
  */
 export const evaluateCandidateAnswers = async (questions, answer) => {
   try {
