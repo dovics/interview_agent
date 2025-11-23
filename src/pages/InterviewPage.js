@@ -128,7 +128,7 @@ const InterviewPage = ({ mode, config, draftNotes, questions, onBack, onFinishIn
       setSpeechError('您的浏览器不支持语音识别功能，请使用Chrome或Edge浏览器');
       return;
     }
-    console.log('SpeechRecognition', SpeechRecognition);
+    
     // 如果已有识别器实例，先清理掉
     if (recognitionRef.current) {
       recognitionRef.current.stop();

@@ -72,7 +72,7 @@ export const generateInterviewQuestions = async (questionCount) => {
     # Constraints
     1. **真实感**: 题目必须贴近实际公务员工作场景，避免过于科幻或脱离实际。
     2. **多样性**: 如果生成多道题，请确保题材不重复（例如不要两道题都是关于环保的）。
-    3. **JSON格式**: 必须严格输出标准的 JSON 格式，不要包含 Markdown 标记。
+    3. **JSON Format**: 必须严格输出标准的 JSON 格式，不要包含 Markdown 标记。
     4. **数量要求**: 必须生成 exactly ${questionCount} 道题目，不多不少。
 
     # Output JSON Structure
@@ -98,6 +98,69 @@ export const generateInterviewQuestions = async (questionCount) => {
     }
   } catch (error) {
     console.error("Error generating question:", error);
+    throw error;
+  }
+};
+
+/**
+ * Evaluate candidate answers using DeepSeek model with overall scoring
+ * @param {Array} questions - Array of questions with their details
+ * @param {String} answer - Array of candidate answers
+ * @returns {Promise<Object>} - Overall evaluation result
+ */
+export const evaluateCandidateAnswers = async (questions, answer) => {
+  try {
+    const token = getApiToken();
+    const model = initializeDeepSeekModel(token);
+    
+    const prompt = `# Role
+    你是一位专业的公务员面试考官，具有丰富的面试评分经验。你的任务是对考生的所有面试回答进行整体专业评分和详细点评。
+
+    # Scoring Criteria (评分标准)
+    1. **观点明确** (20分): 回答是否有明确的观点和立场
+    2. **逻辑清晰** (20分): 回答是否条理清晰，逻辑性强
+    3. **内容充实** (20分): 是否有充分的事实、例子或理论支撑
+    4. **政策理解** (20分): 对相关政策的理解和应用能力
+    5. **语言表达** (20分): 语言是否流畅、准确、得体
+
+    # Input Data
+    请根据以下题目和考生回答进行整体评分：
+    
+    ${questions.map((q, i) => `
+    题目${i+1} (${q.type}题):
+    ${q.text}
+    
+    考生回答:
+    ${answer}`)}
+  
+    # Output Format
+    请严格按照以下JSON格式输出评分结果:
+    {
+      "overallScore": 85, // 总分 (0-100)
+      "feedback": "整体表现良好，观点明确，逻辑清晰。但在政策理解方面还可以进一步加强...",
+      "strengths": ["观点明确", "逻辑性强"], // 优点列表
+      "improvements": ["加强政策理解", "增加实例支撑"], // 改进建议
+      "questionEvaluations": [  // 各题简要评价
+        {
+          "questionId": 1,
+          "score": 80,
+          "briefFeedback": "回答较为全面，但可以增加一些实际案例..."
+        }
+      ]
+    }`;
+    
+    const response = await model.invoke(prompt);
+    
+    // Try to parse the response content as JSON
+    try {
+      const jsonResponse = JSON.parse(response.content);
+      return jsonResponse;
+    } catch (parseError) {
+      console.warn("Failed to parse evaluation response as JSON:", response.content);
+      throw new Error("评分结果格式错误");
+    }
+  } catch (error) {
+    console.error("Error evaluating answers:", error);
     throw error;
   }
 };
