@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { generateInterviewQuestions } from '../services/deepseekService';
 
 const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
   const [questions, setQuestions] = useState([]);
@@ -10,25 +11,28 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
   const intervalRef = useRef(null);
   const flashTimeoutRef = useRef(null);
 
-  // Simulate fetching all questions from DeepSeek model at once
+  // Generate questions using DeepSeek model via LangChain
   useEffect(() => {
     const generateAllQuestions = async () => {
       setLoading(true);
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Generate all mock questions based on config
-      const mockQuestions = [];
-      for (let i = 1; i <= config.questionCount; i++) {
-        mockQuestions.push({
-          id: i,
-          text: `请回答结构化面试问题 ${i}：关于公共服务意识和责任担当的问题。请结合实际经历，详细阐述您在面对复杂情况时如何平衡各方利益，确保公众利益最大化。`,
-          thinkingTime: config.thinkingTime,
-          answeringTime: config.answeringTime
-        });
+      
+      try {
+        // Generate questions using DeepSeek model
+        const questions = await generateInterviewQuestions(config.questionCount);
+        setQuestions(questions);
+      } catch (error) {
+        console.error('Error generating questions with DeepSeek:', error);
+        // Fallback to mock questions if DeepSeek API fails
+        const mockQuestions = [];
+        for (let i = 1; i <= config.questionCount; i++) {
+          mockQuestions.push({
+            id: i,
+            text: `【Mock】请回答结构化面试问题 ${i}：关于公共服务意识和责任担当的问题。请结合实际经历，详细阐述您在面对复杂情况时如何平衡各方利益，确保公众利益最大化。`,
+          });
+        }
+        setQuestions(mockQuestions);
       }
-
-      setQuestions(mockQuestions);
+      
       setLoading(false);
     };
 

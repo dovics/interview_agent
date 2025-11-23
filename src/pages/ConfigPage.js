@@ -2,15 +2,23 @@ import React, { useState } from 'react';
 
 const ConfigPage = ({ onClose, onSave }) => {
   const [activeTab, setActiveTab] = useState('interview'); // 'interview' or 'model'
-  const [interviewConfig, setInterviewConfig] = useState({
-    questionCount: 3,
-    thinkingTime: 300, // 5 minutes in seconds
-    answeringTime: 600 // 10 minutes in seconds
+  const [interviewConfig, setInterviewConfig] = useState(() => {
+    // Load interview config from localStorage or use defaults
+    const savedInterviewConfig = localStorage.getItem('interviewConfig');
+    return savedInterviewConfig ? JSON.parse(savedInterviewConfig) : {
+      questionCount: 3,
+      thinkingTime: 300, // 5 minutes in seconds
+      answeringTime: 600 // 10 minutes in seconds
+    };
   });
   
-  const [modelConfig, setModelConfig] = useState({
-    apiToken: '',
-    model: 'deepseek'
+  const [modelConfig, setModelConfig] = useState(() => {
+    // Load model config from localStorage or use defaults
+    const savedModelConfig = localStorage.getItem('modelConfig');
+    return savedModelConfig ? JSON.parse(savedModelConfig) : {
+      apiToken: '',
+      model: 'deepseek'
+    };
   });
 
   const handleInterviewConfigChange = (field, value) => {
@@ -28,6 +36,10 @@ const ConfigPage = ({ onClose, onSave }) => {
   };
 
   const handleSave = () => {
+    // Save configs to localStorage
+    localStorage.setItem('interviewConfig', JSON.stringify(interviewConfig));
+    localStorage.setItem('modelConfig', JSON.stringify(modelConfig));
+    
     // Pass the configs to the parent component
     onSave({
       interviewConfig,
