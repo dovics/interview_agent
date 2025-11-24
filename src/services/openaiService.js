@@ -151,9 +151,12 @@ export const evaluateCandidateAnswers = async (questions, answer) => {
     
     考生回答:
     ${answer}`)}
-  
-    # Output Format
-    请严格按照以下JSON格式输出评分结果:
+
+    # Constraints
+    1. **JSON Format**: 必须严格输出标准的 JSON 格式，不要包含 Markdown 标记。
+
+    # Output JSON Structure
+
     {
       "overallScore": 85, // 总分 (0-100)
       "feedback": "整体表现良好，观点明确，逻辑清晰。但在政策理解方面还可以进一步加强...",

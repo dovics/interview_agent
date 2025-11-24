@@ -9,8 +9,18 @@ const ResultPage = ({ questions, answer, onBackToStart }) => {
   const [error, setError] = useState(null);
   const [showScreenshot, setShowScreenshot] = useState(false);
   const [screenshot, setScreenshot] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' }); // 添加 toast 状态
   const resultRef = useRef();
   const screenshotRef = useRef(); // 新增用于截图的ref
+
+  // 显示 toast 通知的函数
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    // 3秒后自动隐藏 toast
+    setTimeout(() => {
+      setToast({ show: false, message: '', type });
+    }, 3000);
+  };
 
   useEffect(() => {
     evaluateAnswers();
@@ -31,6 +41,7 @@ const ResultPage = ({ questions, answer, onBackToStart }) => {
       console.error('评分过程中发生错误:', err);
       setError('评分过程中发生错误，请稍后重试');
       setIsLoading(false);
+      showToast('评分过程中发生错误:' + err);
     }
   };
 
@@ -50,12 +61,27 @@ const ResultPage = ({ questions, answer, onBackToStart }) => {
     } catch (err) {
       console.error('截图过程中发生错误:', err);
       setError('截图过程中发生错误，请稍后重试');
+      showToast('截图过程中发生错误，请稍后重试'); // 添加 toast 通知
     }
   };
 
 
   return (
     <div className="max-w-4xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+      {/* Toast notification container */}
+      {toast.show && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className={`px-6 py-4 rounded-lg shadow-lg text-white flex items-center ${
+            toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+          }`}>
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            {toast.message}
+          </div>
+        </div>
+      )}
+
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 py-6 px-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-white">面试结果与评分</h1>
@@ -118,7 +144,7 @@ const ResultPage = ({ questions, answer, onBackToStart }) => {
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                       <h5 className="font-medium text-green-800 mb-2 flex items-center">
                         <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          <path fillRule="evenodd" d="M10 18a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
                         优点
                       </h5>

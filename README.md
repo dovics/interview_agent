@@ -1,4 +1,4 @@
-# Getting Started with Create React App
+# interview_agent
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
@@ -38,6 +38,61 @@ If you aren't satisfied with the build tool and configuration choices, you can `
 Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
 
 You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+
+## Docker Deployment
+
+This application can be built and deployed using Docker. There are two ways to run it with Docker:
+
+### Using Docker Compose (Recommended)
+
+To build and run the application using Docker Compose:
+
+```bash
+docker-compose up --build
+```
+
+This will build the image and start the container. The application will be available at http://localhost:8080
+
+To run in detached mode:
+
+```bash
+docker-compose up --build -d
+```
+
+To stop the containers:
+
+```bash
+docker-compose down
+```
+
+### Using Docker Commands
+
+To build the image:
+
+```bash
+docker build -t interview-agent .
+```
+
+To run the container:
+
+```bash
+docker run -p 8080:80 interview-agent
+```
+
+The application will be available at http://localhost:8080
+
+## Building Docker Images with Build Script
+
+A build script is provided to automatically tag images with Git version information:
+
+```bash
+./build-docker.sh
+```
+
+This script will:
+1. Get the current Git version (tag or commit hash)
+2. Build the Docker image with both the version tag and `latest` tag
+3. Display the tags that were created
 
 ## Learn More
 
