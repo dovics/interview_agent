@@ -1,20 +1,20 @@
-// src/services/deepseekService.js
+// src/services/openaiService.js
 import { ChatOpenAI } from "@langchain/openai";
 
 /**
- * Service to interact with DeepSeek models via LangChain
+ * Service to interact with OpenAI compatible models via LangChain
  */
 
 /**
  * Get API token from localStorage
  * @returns {string|null} - The API token or null if not found
  */
-export const getApiToken = () => {
+export const getModelConfig = () => {
   const savedModelConfig = localStorage.getItem('modelConfig');
   if (savedModelConfig) {
     try {
       const modelConfig = JSON.parse(savedModelConfig);
-      return modelConfig.apiToken || null;
+      return modelConfig
     } catch (error) {
       console.error("Error parsing model config:", error);
       return null;
@@ -23,20 +23,20 @@ export const getApiToken = () => {
   return null;
 };
 
-// Initialize DeepSeek model
-// Note: DeepSeek provides OpenAI-compatible API
-const initializeDeepSeekModel = (token) => {
+// Initialize OpenAI compatible model
+// Note: Supports various OpenAI-compatible APIs including DeepSeek
+const initializeOpenAIModel = () => {
   // In a real implementation, you would get the API key from environment variables
   // const apiKey = process.env.REACT_APP_DEEPSEEK_API_KEY;
-  
+  const config = getModelConfig();
   // For demo purposes, we're initializing without actual API key
   // In production, uncomment the apiKey line and provide your key
   const model = new ChatOpenAI({
-    modelName: "deepseek-chat",
+    modelName: config.modelName,
     // openAIApiKey: token || "dummy-key", // Replace with process.env.REACT_APP_DEEPSEEK_API_KEY
     configuration: {
-      baseURL: "https://api.deepseek.com/v1",
-      apiKey: token,
+      baseURL: config.baseURL,
+      apiKey: config.apiToken,
     },
     temperature: 0.7,
   });
@@ -45,18 +45,16 @@ const initializeDeepSeekModel = (token) => {
 };
 
 /**
- * Generate a single interview question using DeepSeek model
+ * Generate a single interview question using OpenAI compatible model
  * @param {number} questionCount - The number of questions to generate
  * @param {Object} options - Additional options for question generation
  * @param {string} options.difficulty - Difficulty level (easy, medium, hard)
  * @param {string} options.questionLength - Length of questions (short, medium, long)
- * @returns {Promise&lt;Array&gt;} - Generated questions array
+ * @returns {Promise<Array>} - Generated questions array
  */
 export const generateInterviewQuestions = async (questionCount, options = {}) => {
   try {
-    // In a real implementation, we would actually call the model
-    const token = getApiToken();
-    const model = initializeDeepSeekModel(token);
+    const model = initializeOpenAIModel();
     
     // Extract options with defaults
     const { difficulty = 'medium', questionLength = 'medium' } = options;
@@ -125,15 +123,14 @@ export const generateInterviewQuestions = async (questionCount, options = {}) =>
 };
 
 /**
- * Evaluate candidate answers using DeepSeek model with overall scoring
+ * Evaluate candidate answers using OpenAI compatible model with overall scoring
  * @param {Array} questions - Array of questions with their details
  * @param {String} answer - Array of candidate answers
- * @returns {Promise&lt;Object&gt;} - Overall evaluation result
+ * @returns {Promise<Object>} - Overall evaluation result
  */
 export const evaluateCandidateAnswers = async (questions, answer) => {
   try {
-    const token = getApiToken();
-    const model = initializeDeepSeekModel(token);
+    const model = initializeOpenAIModel();
     
     const prompt = `# Role
     你是一位专业的公务员面试考官，具有丰富的面试评分经验。你的任务是对考生的所有面试回答进行整体专业评分和详细点评。

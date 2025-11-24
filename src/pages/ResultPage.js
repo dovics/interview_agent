@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { evaluateCandidateAnswers } from '../services/deepseekService';
+import { evaluateCandidateAnswers } from '../services/openaiService';
 import html2canvas from 'html2canvas';
 import ShareModal from './ShareModal';
 

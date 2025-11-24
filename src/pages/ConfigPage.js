@@ -18,8 +18,9 @@ const ConfigPage = ({ onClose, onSave }) => {
     // Load model config from localStorage or use defaults
     const savedModelConfig = localStorage.getItem('modelConfig');
     return savedModelConfig ? JSON.parse(savedModelConfig) : {
+      baseURL: 'https://api.deepseek.com/v1',
       apiToken: '',
-      model: 'deepseek'
+      modelName: 'deepseek-chat'
     };
   });
 
@@ -174,6 +175,20 @@ const ConfigPage = ({ onClose, onSave }) => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Base URL
+                    </label>
+                    <input
+                      type="text"
+                      value={modelConfig.baseURL}
+                      onChange={(e) => handleModelConfigChange('baseURL', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="例如: https://api.deepseek.com/v1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">请输入大模型 API 的基础 URL</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       API Token
                     </label>
                     <input
@@ -188,17 +203,16 @@ const ConfigPage = ({ onClose, onSave }) => {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      大模型选择
+                      模型名称
                     </label>
-                    <select
-                      value={modelConfig.model}
-                      onChange={(e) => handleModelConfigChange('model', e.target.value)}
+                    <input
+                      type="text"
+                      value={modelConfig.modelName}
+                      onChange={(e) => handleModelConfigChange('modelName', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled // Currently only supporting DeepSeek
-                    >
-                      <option value="deepseek">DeepSeek</option>
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">目前仅支持 DeepSeek 模型</p>
+                      placeholder="例如: deepseek-chat"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">请输入要使用的大模型名称</p>
                   </div>
                 </div>
               </div>

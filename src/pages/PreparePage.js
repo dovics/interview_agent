@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { generateInterviewQuestions } from '../services/deepseekService';
+import { generateInterviewQuestions } from '../services/openaiService';
 
 const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
   const [questions, setQuestions] = useState([]);
@@ -9,8 +9,18 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
   const [isWarning, setIsWarning] = useState(false);
   const [isFlashing, setIsFlashing] = useState(false);
   const [error, setError] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' }); // 添加 toast 状态
   const intervalRef = useRef(null);
   const flashTimeoutRef = useRef(null);
+
+  // 显示 toast 通知的函数
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    // 3秒后自动隐藏 toast
+    setTimeout(() => {
+      setToast({ show: false, message: '', type });
+    }, 3000);
+  };
 
   const generateAllQuestions = async () => {
     setLoading(true);
@@ -27,6 +37,7 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
     } catch (error) {
       console.error('Error generating questions with DeepSeek:', error);
       setError('生成面试题目失败，请稍后重试');
+      showToast('Error generating questions with DeepSeek:' + error, 'error');
     }
 
     setLoading(false);
@@ -115,6 +126,17 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mb-4"></div>
           <p className="text-gray-600">正在从 DeepSeek 大模型获取面试题目，请稍候...</p>
         </div>
+        
+        {/* Toast notification container */}
+        {toast.show && (
+          <div className="fixed top-4 right-4 z-50">
+            <div className={`px-4 py-2 rounded-lg shadow-lg text-white ${
+              toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+            }`}>
+              {toast.message}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -145,6 +167,17 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
             返回主页
           </button>
         </div>
+        
+        {/* Toast notification container */}
+        {toast.show && (
+          <div className="fixed top-4 right-4 z-50">
+            <div className={`px-4 py-2 rounded-lg shadow-lg text-white ${
+              toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+            }`}>
+              {toast.message}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -222,6 +255,17 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
           </button>
         </div>
       </div>
+      
+      {/* Toast notification container */}
+      {toast.show && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className={`px-4 py-2 rounded-lg shadow-lg text-white ${
+            toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+          }`}>
+            {toast.message}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
