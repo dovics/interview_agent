@@ -36,14 +36,20 @@ const initializeOpenAIModel = () => {
   // In a real implementation, you would get the API key from environment variables
   // const apiKey = process.env.REACT_APP_DEEPSEEK_API_KEY;
   const config = getModelConfig();
+  
+  // 设置默认值
+  const modelName = config?.modelName || "deepseek-chat";
+  const baseURL = config?.baseURL || "https://api.deepseek.com/v1";
+  const apiToken = config?.apiToken || "sk-your-api-key";
+  
   // For demo purposes, we're initializing without actual API key
   // In production, uncomment the apiKey line and provide your key
   const model = new ChatOpenAI({
-    modelName: config.modelName,
+    modelName: modelName,
     // openAIApiKey: token || "dummy-key", // Replace with process.env.REACT_APP_DEEPSEEK_API_KEY
     configuration: {
-      baseURL: config.baseURL,
-      apiKey: config.apiToken,
+      baseURL: baseURL,
+      apiKey: apiToken,
     },
     temperature: 0.7,
   });
