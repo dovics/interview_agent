@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 const InterviewPage = ({ mode, config, draftNotes, questions, onBack, onFinishInterview }) => {
+  // Ensure questions is always an array
+  const safeQuestions = Array.isArray(questions) ? questions : [];
+  
   const [recording, setRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
@@ -116,12 +119,6 @@ const InterviewPage = ({ mode, config, draftNotes, questions, onBack, onFinishIn
   };
 
   const startSpeechRecognition = () => {
-    // 如果是全真模式并且已经停止过语音识别，则不允许重新开始
-    if (mode === 'real' && !recognitionRef.current) {
-      setSpeechError('全真模拟模式下，语音识别已停止，不允许重新开始');
-      return;
-    }
-
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
@@ -239,7 +236,7 @@ const InterviewPage = ({ mode, config, draftNotes, questions, onBack, onFinishIn
         </div>
         <div className="flex items-center mt-4 text-blue-100">
           <span className="mr-4">模式: {mode === 'real' ? '全真模拟' : '练习模式'}</span>
-          <span>题目总数: {questions.length}</span>
+          <span>题目总数: {safeQuestions.length}</span>
         </div>
       </div>
       
@@ -258,7 +255,7 @@ const InterviewPage = ({ mode, config, draftNotes, questions, onBack, onFinishIn
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">所有面试题目</h2>
           <div className="space-y-4">
-            {questions.map((question, index) => (
+            {safeQuestions.map((question, index) => (
               <div 
                 key={question.id} 
                 className="bg-gray-50 p-6 rounded-lg border border-gray-200"

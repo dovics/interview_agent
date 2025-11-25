@@ -1,6 +1,13 @@
 // src/services/openaiService.js
 import { ChatOpenAI } from "@langchain/openai";
 
+const cleanModelResponse = (content) => {
+  if (typeof content === 'string' && content.startsWith('```json') && content.endsWith('```')) {
+    content = content.slice(7, -3).trim();
+  }
+
+  return content;
+}
 /**
  * Service to interact with OpenAI compatible models via LangChain
  */
@@ -55,24 +62,24 @@ const initializeOpenAIModel = () => {
 export const generateInterviewQuestions = async (questionCount, options = {}) => {
   try {
     const model = initializeOpenAIModel();
-    
+
     // Extract options with defaults
     const { difficulty = 'medium', questionLength = 'medium' } = options;
-    
+
     // Map difficulty levels to descriptive text
     const difficultyMap = {
       easy: '较为简单，适合初学者',
       medium: '中等难度，有一定挑战性',
       hard: '较难，需要深入思考和丰富经验'
     };
-    
+
     // Map question length to descriptive text
     const lengthMap = {
       short: '简短精练（约20-30字）',
       medium: '中等长度（约30-50字）',
       long: '较长详细（约50-80字）'
     };
-    
+
     const prompt = `# Role
     你是一位中国公务员结构化面试的命题专家，熟悉国考、省考及事业单位面试的题型规律。你擅长设计考察考生综合素质、应变能力和政治素养的高质量面试题。
 
@@ -104,12 +111,13 @@ export const generateInterviewQuestions = async (questionCount, options = {}) =>
         "analysis_points": ["点1", "点2"] // (可选) 给后端的简单提示，用于辅助评分（不展示给考生）
       }
     ]`;
-    
+
     const response = await model.invoke(prompt);
-    
+
     // Try to parse the response content as JSON
     try {
-      const jsonResponse = JSON.parse(response.content);
+      const contnet = cleanModelResponse(response.content); 
+      const jsonResponse = JSON.parse(contnet);
       return jsonResponse;
     } catch (parseError) {
       console.warn("Failed to parse response as JSON, returning raw content:", response.content);
@@ -131,7 +139,7 @@ export const generateInterviewQuestions = async (questionCount, options = {}) =>
 export const evaluateCandidateAnswers = async (questions, answer) => {
   try {
     const model = initializeOpenAIModel();
-    
+
     const prompt = `# Role
     你是一位专业的公务员面试考官，具有丰富的面试评分经验。你的任务是对考生的所有面试回答进行整体专业评分和详细点评。
 
@@ -146,7 +154,7 @@ export const evaluateCandidateAnswers = async (questions, answer) => {
     请根据以下题目和考生回答进行整体评分：
     
     ${questions.map((q, i) => `
-    题目${i+1} (${q.type}题):
+    题目${i + 1} (${q.type}题):
     ${q.text}
     
     考生回答:
@@ -170,12 +178,13 @@ export const evaluateCandidateAnswers = async (questions, answer) => {
         }
       ]
     }`;
-    
+
     const response = await model.invoke(prompt);
-    
+
     // Try to parse the response content as JSON
     try {
-      const jsonResponse = JSON.parse(response.content);
+      const content = cleanModelResponse(response.content);
+      const jsonResponse = JSON.parse(content);
       return jsonResponse;
     } catch (parseError) {
       console.warn("Failed to parse evaluation response as JSON:", response.content);

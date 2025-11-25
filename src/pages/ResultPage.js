@@ -4,6 +4,9 @@ import html2canvas from 'html2canvas';
 import ShareModal from './ShareModal';
 
 const ResultPage = ({ questions, answer, onBackToStart }) => {
+  // Ensure questions is always an array
+  const safeQuestions = Array.isArray(questions) ? questions : [];
+  
   const [evaluation, setEvaluation] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -158,7 +161,7 @@ const ResultPage = ({ questions, answer, onBackToStart }) => {
                     <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                       <h5 className="font-medium text-amber-800 mb-2 flex items-center">
                         <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          <path fillRule="evenodd" d="M10 18a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
                         改进建议
                       </h5>
@@ -182,7 +185,7 @@ const ResultPage = ({ questions, answer, onBackToStart }) => {
                   
                   <div className="border border-gray-200 rounded-lg p-6">
                     <div className="space-y-3 mb-6">
-                      {questions.map((question, index) => (
+                      {safeQuestions.map((question, index) => (
                         <div key={question.id} className="flex">
                           <span className="mr-2 text-gray-500">{index + 1}.</span>
                           <span className="text-gray-800">{question.text}</span>

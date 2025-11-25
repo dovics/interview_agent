@@ -107,8 +107,10 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
   };
 
   const handleStartInterview = () => {
+    // Ensure questions is always an array
+    const safeQuestions = Array.isArray(questions) ? questions : [];
     if (onStartInterview) {
-      onStartInterview(draftNotes, questions);
+      onStartInterview(draftNotes, safeQuestions);
     }
   };
 
@@ -196,9 +198,10 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
         </div>
         <div className="flex items-center mt-4 text-blue-100">
           <span className="mr-4">模式: {mode === 'real' ? '全真模拟' : '练习模式'}</span>
-          <span>题目总数: {questions.length}</span>
+          <span>题目总数: {Array.isArray(questions) ? questions.length : 0}</span>
         </div>
       </div>
+      
       <div className="p-6">
         {/* Countdown Timer */}
         {mode !== 'real' && (<div className={`mb-6 p-4 rounded-lg text-center ${isWarning ? 'bg-yellow-100 border border-yellow-300' : 'bg-blue-50'}`}>
@@ -211,7 +214,7 @@ const PreparePage = ({ mode, config, onBack, onStartInterview }) => {
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">所有面试题目</h2>
           <div className="space-y-6">
-            {questions.map((question, index) => (
+            {Array.isArray(questions) && questions.map((question, index) => (
               <div key={question.id} className="bg-gray-50 p-6 rounded-lg border border-gray-200">
                 <div className="flex items-start mb-3">
                   <span className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-blue-500 text-white font-medium mr-3">
